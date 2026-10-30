@@ -1309,3 +1309,4 @@ def get_demo_project_data() -> Dict[str, Any]:
         "heatmap": heatmap,
         "readiness": readiness
     }
+

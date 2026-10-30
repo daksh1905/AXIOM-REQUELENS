@@ -100,3 +100,4 @@ class LLMFactory:
                 print(f"[LLMFactory] Gemini init failed: {e}")
                 
         return None
+

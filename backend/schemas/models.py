@@ -219,3 +219,4 @@ class Project(BaseModel):
     created_at: str
     is_demo: bool = False
     readiness: Optional[ProposalReadiness] = None
+

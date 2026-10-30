@@ -151,3 +151,4 @@ class ProjectRepository:
                         r["notes"] = notes
             self.update_project_data(project_id, data, proj.get("readiness"))
         conn.close()
+

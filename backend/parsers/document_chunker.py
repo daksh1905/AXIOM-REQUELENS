@@ -60,3 +60,4 @@ class DocumentChunker:
                 chunk_idx += 1
                 
         return chunks
+

@@ -148,3 +148,4 @@ Open `http://localhost:3000` in your browser.
 3. **Legal clauses**: Flagged with *"Legal review recommended"* and never treated as legal advice.
 4. **Delivery estimates**: Presented as preliminary benchmarks with delivery team disclaimers.
 5. **No fake win probabilities**: Proposal Readiness indicates internal audit completeness only.
+

@@ -96,3 +96,4 @@ class ReadinessScorer:
             "traceability_coverage": traceability_score,
             "scoring_explanation": explanation
         }
+
