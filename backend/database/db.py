@@ -102,7 +102,16 @@ class ProjectRepository:
     def list_projects(self) -> List[Dict[str, Any]]:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, filename, file_type, file_size_bytes, pages_analyzed, status, created_at, is_demo, readiness_json FROM projects ORDER BY created_at DESC")
+        cursor.execute("""
+            SELECT id, name, filename, file_type, file_size_bytes, pages_analyzed, status, created_at, is_demo, readiness_json,
+                   COALESCE(
+                       json_array_length(data_json, '$.requirements'),
+                       json_array_length(data_json, '$.normalized_requirements'),
+                       0
+                   ) as total_requirements
+            FROM projects 
+            ORDER BY created_at DESC
+        """)
         rows = cursor.fetchall()
         conn.close()
         
@@ -111,6 +120,7 @@ class ProjectRepository:
             p = dict(row)
             p["is_demo"] = bool(p["is_demo"])
             p["readiness"] = json.loads(p["readiness_json"]) if p["readiness_json"] else None
+            p["total_requirements"] = p.get("total_requirements") or 0
             results.append(p)
         return results
 

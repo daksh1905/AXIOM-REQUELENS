@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from backend.database.db import ProjectRepository
 from backend.services.pipeline_orchestrator import PipelineOrchestrator, get_progress, update_progress
+from backend.services.claim_firewall import ClaimFirewall
 from backend.exports.export_service import ExportService
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "sample-data"))
@@ -41,6 +42,11 @@ class ReviewUpdateRequest(BaseModel):
 class ClarificationUpdateRequest(BaseModel):
     status: str
     response: Optional[str] = None
+
+class ClaimActionRequest(BaseModel):
+    action: str  # "accept_rewrite", "reject", "edit", "mark_reviewed"
+    custom_text: Optional[str] = None
+    notes: Optional[str] = None
 
 class ChatRequest(BaseModel):
     query: str
@@ -87,9 +93,14 @@ def get_demo_project():
 
 @app.get("/api/projects/{project_id}")
 def get_project(project_id: str):
+    if project_id == "demo":
+        project_id = "demo-rfp-001"
     proj = repo.get_project(project_id)
+    if not proj and project_id == "demo-rfp-001":
+        startup_event()
+        proj = repo.get_project("demo-rfp-001")
     if not proj:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
     return proj
 
 @app.get("/api/projects/{project_id}/progress")
@@ -215,6 +226,54 @@ def update_clarification(project_id: str, clar_id: str, body: ClarificationUpdat
     repo.update_project_data(project_id, data, readiness=proj.get("readiness"))
     return {"status": "success", "clarification_id": clar_id, "new_status": body.status}
 
+@app.post("/api/projects/{project_id}/claims/{claim_id}/action")
+def update_claim_action(project_id: str, claim_id: str, body: ClaimActionRequest):
+    proj = repo.get_project(project_id)
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    action_clean = body.action.lower().strip()
+    valid_actions = ["accept_rewrite", "reject", "edit", "mark_reviewed"]
+    if action_clean not in valid_actions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid action '{body.action}'. Supported actions: {', '.join(valid_actions)}"
+        )
+
+    data = proj.get("data", {})
+    claim_firewall = data.get("claim_firewall", {})
+    claims = claim_firewall.get("claims", [])
+    if not claims:
+        claims = data.get("claim_audits", [])
+
+    try:
+        target_claim, summary = ClaimFirewall.apply_claim_action(
+            claims=claims,
+            claim_id=claim_id,
+            action=action_clean,
+            custom_text=body.custom_text,
+            notes=body.notes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    claim_firewall["summary"] = summary
+    claim_firewall["claims"] = claims
+    data["claim_firewall"] = claim_firewall
+    data["claim_audits"] = claims
+    
+    # Update readiness score
+    readiness = proj.get("readiness") or {}
+    readiness["proposal_grounding"] = summary["grounding_score"]
+    data["readiness"] = readiness
+
+    repo.update_project_data(project_id, data, readiness=readiness)
+    return {
+        "status": "success",
+        "claim": target_claim,
+        "summary": summary
+    }
+
 @app.get("/api/projects/{project_id}/export/docx")
 def export_docx(project_id: str):
     proj = repo.get_project(project_id)
@@ -237,6 +296,34 @@ def export_pdf(project_id: str):
         
     stream = ExportService.generate_pdf(proj, proj.get("data", {}))
     filename = f"{proj.get('name', 'Proposal').replace(' ', '_')}_Proposal.pdf"
+    return StreamingResponse(
+        stream,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@app.get("/api/projects/{project_id}/report/docx")
+def export_project_report_docx(project_id: str):
+    proj = repo.get_project(project_id)
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    stream = ExportService.generate_project_report_docx(proj, proj.get("data", {}))
+    filename = f"{proj.get('name', 'Project').replace(' ', '_')}_Consolidated_Report.docx"
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@app.get("/api/projects/{project_id}/report/pdf")
+def export_project_report_pdf(project_id: str):
+    proj = repo.get_project(project_id)
+    if not proj:
+        raise HTTPException(status_code=404, detail="Project not found")
+        
+    stream = ExportService.generate_project_report_pdf(proj, proj.get("data", {}))
+    filename = f"{proj.get('name', 'Project').replace(' ', '_')}_Consolidated_Report.pdf"
     return StreamingResponse(
         stream,
         media_type="application/pdf",

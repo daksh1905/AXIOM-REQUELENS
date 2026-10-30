@@ -31,13 +31,16 @@ class ReadinessScorer:
 
         # 3. Proposal Grounding (penalized by unsupported claims)
         total_claims = len(claim_audits) or 1
-        grounded_claims = sum(1 for c in claim_audits if c.get("classification") == "GROUNDED_REQUIREMENT")
+        grounded_claims = sum(1 for c in claim_audits if c.get("classification") in ["GROUNDED_REQUIREMENT", "RFP_FACT"])
         proposed_claims = sum(1 for c in claim_audits if c.get("classification") == "PROPOSED_DESIGN")
         assumed_claims = sum(1 for c in claim_audits if c.get("classification") == "ASSUMPTION")
         unsupported_claims = sum(1 for c in claim_audits if c.get("classification") == "UNSUPPORTED_CLAIM")
+        needs_review_claims = sum(1 for c in claim_audits if c.get("classification") == "NEEDS_REVIEW")
         
         # Grounded and Proposed are high quality, Assumptions slight penalty, Unsupported heavy penalty
-        grounding_score = max(10, min(100, int(((grounded_claims * 1.0 + proposed_claims * 0.95 + assumed_claims * 0.7) / (total_claims + unsupported_claims * 0.8)) * 100)))
+        weighted_val = (grounded_claims * 1.0 + proposed_claims * 0.95 + assumed_claims * 0.85)
+        weighted_tot = total_claims + (unsupported_claims * 1.5) + (needs_review_claims * 0.8)
+        grounding_score = max(10, min(100, int((weighted_val / max(weighted_tot, 1)) * 100)))
 
         # 4. Timeline Feasibility (penalized by timeline risks)
         timeline_risks = [r for r in risks if r.get("category", "").lower() == "timeline"]

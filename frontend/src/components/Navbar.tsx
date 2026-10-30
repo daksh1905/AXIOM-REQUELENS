@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ShieldCheck, Sparkles, FileText, ArrowRight, Layers } from "lucide-react";
+import { ShieldCheck, Sparkles, FileText, ArrowRight, Layers, FolderGit2 } from "lucide-react";
 
 export function Navbar({ onOpenUpload }: { onOpenUpload?: () => void }) {
   return (
@@ -25,29 +25,33 @@ export function Navbar({ onOpenUpload }: { onOpenUpload?: () => void }) {
         </Link>
 
         {/* Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-          <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-          <a href="#differentiation" className="hover:text-white transition-colors">Why RecLens</a>
-          <a href="#features" className="hover:text-white transition-colors">Platform Capabilities</a>
-          <Link href="/projects/demo-rfp-001" className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 font-semibold transition-colors">
-            <Sparkles className="w-3.5 h-3.5" />
-            Live Demo
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
+          <Link href="/projects" className="text-white hover:text-blue-300 font-semibold flex items-center gap-1.5 transition-colors">
+            <FolderGit2 className="w-4 h-4 text-blue-400" />
+            My Projects
+          </Link>
+          <a href="/#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+          <a href="/#differentiation" className="hover:text-white transition-colors">Why RecLens</a>
+          <a href="/#features" className="hover:text-white transition-colors">Capabilities</a>
+          <Link href="/projects/demo-rfp-001" className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Demo
           </Link>
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <Link
-            href="/projects/demo-rfp-001"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition"
+            href="/projects"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition"
           >
-            <FileText className="w-3.5 h-3.5 text-blue-400" />
-            Explore Demo RFP
+            <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
+            My Projects
           </Link>
 
           <button
             onClick={onOpenUpload}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-md shadow-blue-600/30 transition hover:shadow-blue-500/40 active:scale-95"
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-md shadow-blue-600/30 transition hover:shadow-blue-500/40 active:scale-95 cursor-pointer"
           >
             Analyze RFP
             <ArrowRight className="w-3.5 h-3.5" />

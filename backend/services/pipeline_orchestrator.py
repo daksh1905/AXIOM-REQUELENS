@@ -6,6 +6,14 @@ from backend.parsers.document_parser import DocumentParser, ParsedPage
 from backend.parsers.document_chunker import DocumentChunker, DocumentChunk
 from backend.services.llm_provider import LLMFactory
 from backend.services.readiness_scorer import ReadinessScorer
+from backend.services.contradiction_detector import ContradictionDetector, ContradictionType
+from backend.services.requirement_normalizer import RequirementNormalizer
+from backend.services.ambiguity_detector import AmbiguityDetector
+from backend.services.solution_architect import SolutionArchitect
+from backend.services.delivery_estimator import DeliveryEstimator
+from backend.services.proposal_generator import ProposalGenerator
+from backend.services.traceability_engine import TraceabilityEngine
+from backend.services.claim_firewall import ClaimFirewall
 
 # In-memory progress tracker for live projects
 pipeline_progress: Dict[str, Dict[str, Any]] = {}
@@ -43,8 +51,9 @@ class PipelineOrchestrator:
         
         # 4, 5, 6. Extracting, normalizing, and categorizing requirements
         update_progress(project_id, "Extracting requirements with exact source citations...", 40, completed)
-        requirements = PipelineOrchestrator._extract_requirements(pages, chunks, llm)
-        completed.append("Extracting requirements")
+        raw_requirements = PipelineOrchestrator._extract_requirements(pages, chunks, llm)
+        requirements, norm_stats = RequirementNormalizer.normalize_and_deduplicate(raw_requirements)
+        completed.append("Extracting & normalizing requirements")
         
         # 7, 8. Detecting ambiguities
         update_progress(project_id, "Analyzing requirement ambiguities...", 55, completed)
@@ -69,14 +78,72 @@ class PipelineOrchestrator:
         # Evaluation criteria (Phase 1 extractor)
         eval_criteria = PipelineOrchestrator._extract_evaluation_criteria(pages, llm)
         
-        # Phase 2 & 3 Hooks (Extensible placeholders)
-        arch_solution, tech_stack = PipelineOrchestrator._generate_architecture_hook(requirements)
-        timeline_milestones, team_estimates, delivery_feasibility, assumptions = PipelineOrchestrator._estimate_timeline_hook(requirements, risks)
-        proposal_sections = PipelineOrchestrator._generate_proposal_hook(requirements)
-        claim_audits = PipelineOrchestrator._audit_proposal_claims_hook(proposal_sections, requirements)
-        traceability_records = PipelineOrchestrator._build_traceability_hook(requirements)
-        
-        # 14. Readiness scoring (Deterministic formula)
+        # 12. Solution Architecture & Technology Stack (Phase 2 Engine)
+        update_progress(project_id, "Designing technical architecture and selecting tech stack...", 92, completed)
+        project_name = filename.rsplit('.', 1)[0].replace('_', ' ')
+        arch_solution, tech_stack, assumptions = SolutionArchitect.generate_architecture_and_stack(
+            requirements=requirements,
+            risks=risks,
+            ambiguities=ambiguities,
+            rfp_filename=project_name
+        )
+        completed.append("Designing architecture")
+
+        # 13. Delivery Feasibility, Team Composition & Milestones (Phase 2 Engine)
+        update_progress(project_id, "Estimating implementation timeline and delivery feasibility...", 94, completed)
+        delivery_feasibility, team_estimates, timeline_milestones = DeliveryEstimator.estimate_delivery_and_team(
+            requirements=requirements,
+            risks=risks,
+            architecture_components=arch_solution["components"],
+            assumptions=assumptions
+        )
+        completed.append("Estimating delivery")
+
+        # 14. Structured 16-Section Proposal Generation (Phase 2 Engine)
+        update_progress(project_id, "Engineering 16-section technical proposal...", 96, completed)
+        proposal_sections = ProposalGenerator.generate_proposal(
+            project_name=project_name,
+            requirements=requirements,
+            risks=risks,
+            clarifications=clarifications,
+            architecture=arch_solution,
+            tech_stack=tech_stack,
+            assumptions=assumptions,
+            milestones=timeline_milestones,
+            team=team_estimates
+        )
+        completed.append("Engineering proposal")
+
+        # 15. Traceability Matrix & Coverage Audit (Phase 2 Engine)
+        update_progress(project_id, "Generating end-to-end traceability matrix and coverage audit...", 98, completed)
+        trace_result = TraceabilityEngine.build_matrix_and_audit(
+            requirements=requirements,
+            architecture=arch_solution,
+            proposal_sections=proposal_sections,
+            milestones=timeline_milestones,
+            risks=risks
+        )
+        traceability_records = trace_result["matrix"]
+        coverage_audit = trace_result["coverage_audit"]
+        completed.append("Building traceability matrix")
+
+        # 16. Claim Firewall & Proposal Verification Engine (Phase 3 Engine)
+        update_progress(project_id, "Executing Claim Firewall independent verification...", 99, completed)
+        claim_firewall = ClaimFirewall.audit_project(
+            requirements=requirements,
+            architecture=arch_solution,
+            tech_stack=tech_stack,
+            delivery_feasibility=delivery_feasibility,
+            milestones=timeline_milestones,
+            team=team_estimates,
+            assumptions=assumptions,
+            proposal_sections=proposal_sections,
+            risks=risks
+        )
+        claim_audits = claim_firewall["claims"]
+        completed.append("Running claim firewall")
+
+        # 17. Readiness scoring (Deterministic formula)
         readiness = ReadinessScorer.calculate_readiness(
             requirements=requirements,
             risks=risks,
@@ -87,9 +154,11 @@ class PipelineOrchestrator:
             traceability_records=traceability_records,
             proposal_sections=proposal_sections
         )
+        # Sync Proposal Grounding score with Claim Firewall output
+        readiness["proposal_grounding"] = claim_firewall["summary"]["grounding_score"]
         
-        # Human review queue & Heatmap
-        human_reviews = PipelineOrchestrator._build_human_review_queue(risks, contradictions, ambiguities)
+        # Human review queue & Heatmap (Integrated with Claim Firewall findings)
+        human_reviews = PipelineOrchestrator._build_human_review_queue(risks, contradictions, ambiguities, claim_audits)
         heatmap = PipelineOrchestrator._build_heatmap(pages, requirements, risks, ambiguities, contradictions)
         
         update_progress(project_id, "Analysis complete!", 100, completed)
@@ -98,6 +167,12 @@ class PipelineOrchestrator:
             "requirements": requirements,
             "total_requirements_count": len(requirements),
             "mandatory_count": sum(1 for r in requirements if r.get("priority") == "Mandatory"),
+            "category_counts": norm_stats.get("category_counts", {}),
+            "type_counts": norm_stats.get("type_counts", {}),
+            "scope_counts": norm_stats.get("scope_counts", {}),
+            "rejected_artifacts_count": norm_stats.get("rejected_artifacts_count", 0),
+            "duplicates_merged_count": norm_stats.get("duplicates_merged_count", 0),
+            "normalization_stats": norm_stats,
             "risks": risks,
             "critical_risks_count": sum(1 for r in risks if r.get("severity") == "Critical"),
             "contradictions": contradictions,
@@ -114,8 +189,11 @@ class PipelineOrchestrator:
             "team_estimates": team_estimates,
             "delivery_feasibility": delivery_feasibility,
             "claim_audits": claim_audits,
+            "claim_firewall": claim_firewall,
+            "dual_origin_components": claim_firewall.get("dual_origin_components", []),
             "proposal_sections": proposal_sections,
             "traceability_records": traceability_records,
+            "coverage_audit": coverage_audit,
             "human_reviews": human_reviews,
             "heatmap": heatmap,
             "readiness": readiness
@@ -247,99 +325,19 @@ class PipelineOrchestrator:
     @staticmethod
     def _detect_ambiguities(requirements: List[Dict[str, Any]], pages: List[ParsedPage], llm) -> List[Dict[str, Any]]:
         """
-        Detects vague, unmeasurable requirements (e.g. 'high traffic', 'fast response', 'easy to use').
+        Detects unmeasurable, subjective requirements using evidence-grounded rules.
         """
-        ambiguities = []
-        amb_id = 1
-        
-        vague_patterns = [
-            ("high traffic", ["Expected peak concurrent users", "Peak requests per second (RPS)", "Geographic distribution of requests"], "Infrastructure sizing, auto-scaling thresholds, and bandwidth costs cannot be estimated reliably."),
-            ("fast response", ["Target latency in milliseconds (p95 / p99)", "Network conditions under test"], "SLA performance criteria cannot be validated or benchmarked."),
-            ("easy to use", ["Usability metric (e.g., SUS score)", "Accessibility standard (e.g., WCAG 2.1 AA)"], "Subjective UX requirement cannot be tested objectively."),
-            ("industry standard", ["Specific security standard (e.g., NIST 800-53, ISO 27001)", "Encryption cipher suite"], "Compliance and audit criteria remain ambiguous."),
-            ("minimum downtime", ["Specific Recovery Time Objective (RTO)", "Allowable maintenance window"], "High availability and disaster recovery tiering cannot be architected.")
-        ]
-        
-        for req in requirements:
-            text_lower = req.get("text", "").lower()
-            for pattern, missing, impact in vague_patterns:
-                if pattern in text_lower:
-                    ambiguities.append({
-                        "id": f"AMB-{amb_id:03d}",
-                        "requirement_id": req.get("id"),
-                        "text": req.get("text"),
-                        "missing_information": missing,
-                        "impact": impact,
-                        "severity": "High" if "traffic" in pattern or "downtime" in pattern else "Medium",
-                        "suggested_clarification": f"Please provide specific, measurable target thresholds for '{pattern}' (e.g. numeric metrics or benchmarks)."
-                    })
-                    amb_id += 1
-                    break
-                    
-        return ambiguities
+        return AmbiguityDetector.analyze_requirements(requirements)
 
     @staticmethod
     def _detect_contradictions(requirements: List[Dict[str, Any]], pages: List[ParsedPage], llm) -> List[Dict[str, Any]]:
         """
-        Compares requirements across pages semantically to identify direct contradictions.
+        Evidence-locked contradiction detector.
+        Compares requirements across pages semantically and validates propositions.
+        Only emits DIRECT_CONTRADICTION and strong POTENTIAL_TENSION.
+        Never fabricates facts absent from evidence text.
         """
-        contradictions = []
-        con_id = 1
-        
-        # 1. On-premise vs Cloud Hosting conflict
-        onprem_reqs = [r for r in requirements if "on-premise" in r.get("text", "").lower()]
-        cloud_reqs = [r for r in requirements if any(re.search(r"\b" + re.escape(c) + r"\b", r.get("text", ""), re.IGNORECASE) for c in ["aws", "rds", "cloud database", "public cloud"])]
-        
-        if onprem_reqs and cloud_reqs:
-            r_onprem = onprem_reqs[0]
-            r_cloud = cloud_reqs[0]
-            contradictions.append({
-                "id": f"CON-{con_id:03d}",
-                "requirement_ids": [r_onprem["id"], r_cloud["id"]],
-                "severity": "Critical",
-                "reason": (
-                    f"Direct architectural conflict: {r_onprem['id']} on Page {r_onprem['page']} mandates on-premise private infrastructure, "
-                    f"whereas {r_cloud['id']} on Page {r_cloud['page']} specifies public cloud managed services ({r_cloud['text'][:60]}...)."
-                ),
-                "confidence": 0.95,
-                "evidence": [
-                    {"req_id": r_onprem["id"], "page": r_onprem["page"], "section": r_onprem["section"], "text": r_onprem["text"]},
-                    {"req_id": r_cloud["id"], "page": r_cloud["page"], "section": r_cloud["section"], "text": r_cloud["text"]}
-                ],
-                "clarification_question": (
-                    f"Section '{r_onprem['section']}' specifies on-premise infrastructure, while Section '{r_cloud['section']}' specifies cloud managed services. "
-                    f"Could the client confirm the governing deployment boundary?"
-                ),
-                "reviewed": False
-            })
-            con_id += 1
-            
-        # 2. Tight timeline vs Heavy data migration conflict
-        timeline_reqs = [r for r in requirements if r.get("category") == "Timeline" or any(w in r.get("text", "").lower() for w in ["8 weeks", "12 weeks", "compressed"])]
-        migration_reqs = [r for r in requirements if "migration" in r.get("text", "").lower() or "terabyte" in r.get("text", "").lower()]
-        
-        if timeline_reqs and migration_reqs:
-            r_time = timeline_reqs[0]
-            r_mig = migration_reqs[0]
-            contradictions.append({
-                "id": f"CON-{con_id:03d}",
-                "requirement_ids": [r_time["id"], r_mig["id"]],
-                "severity": "High",
-                "reason": (
-                    f"Schedule compression feasibility conflict: {r_time['id']} on Page {r_time['page']} mandates complete go-live within a compressed window, "
-                    f"while {r_mig['id']} on Page {r_mig['page']} requires large-scale data cleansing and migration prior to cutover."
-                ),
-                "confidence": 0.90,
-                "evidence": [
-                    {"req_id": r_time["id"], "page": r_time["page"], "section": r_time["section"], "text": r_time["text"]},
-                    {"req_id": r_mig["id"], "page": r_mig["page"], "section": r_mig["section"], "text": r_mig["text"]}
-                ],
-                "clarification_question": "Will the client accept a phased cutover approach where core services launch in Phase 1 and full historical migration completes in Phase 2?",
-                "reviewed": False
-            })
-            con_id += 1
-            
-        return contradictions
+        return ContradictionDetector.analyze_requirements(requirements)
 
     @staticmethod
     def _analyze_risks(requirements: List[Dict[str, Any]], pages: List[ParsedPage], llm) -> List[Dict[str, Any]]:
@@ -349,8 +347,12 @@ class PipelineOrchestrator:
         risks = []
         risk_id = 1
         
-        # 1. Timeline Risk
-        timeline_reqs = [r for r in requirements if r.get("category") == "Timeline" or any(w in r.get("text", "").lower() for w in ["weeks", "month", "schedule"])]
+        # 1. Timeline Risk (Excludes bid disqualification / tender submission rules)
+        timeline_reqs = [
+            r for r in requirements 
+            if (r.get("category") == "Timeline" or any(w in r.get("text", "").lower() for w in ["weeks", "month", "go-live", "completion schedule"]))
+            and not any(b in r.get("text", "").lower() or b in r.get("section", "").lower() for b in ["disqualification", "bid submission", "tender validity", "bid rejected", "submission deadline"])
+        ]
         migration_reqs = [r for r in requirements if "migration" in r.get("text", "").lower() or "oracle" in r.get("text", "").lower()]
         integration_reqs = [r for r in requirements if r.get("category") == "Integration"]
         
@@ -438,11 +440,20 @@ class PipelineOrchestrator:
                 
         for amb in ambiguities:
             if amb.get("suggested_clarification"):
+                term = amb.get("term", "")
+                cat = "Performance & SLA"
+                if "Staffing" in term or "Capacity" in term:
+                    cat = "Delivery & Staffing"
+                elif "DR" in term or "Architecture" in term:
+                    cat = "Architecture & DR"
+                elif "Standard" in term:
+                    cat = "Compliance & Standards"
+
                 clarifications.append({
                     "id": f"CLAR-{c_id:03d}",
-                    "question": f"Regarding requirement {amb.get('requirement_id')}: {amb['suggested_clarification']}",
+                    "question": amb["suggested_clarification"],
                     "requirement_ids": [amb.get("requirement_id")],
-                    "category": "Performance & Sizing",
+                    "category": cat,
                     "status": "Open",
                     "response": None
                 })
@@ -574,9 +585,29 @@ class PipelineOrchestrator:
         return records
 
     @staticmethod
-    def _build_human_review_queue(risks, contradictions, ambiguities):
+    def _build_human_review_queue(risks, contradictions, ambiguities, claims=None):
         reviews = []
         rev_id = 1
+        claims = claims or []
+        
+        # 1. Claim Firewall findings (Prioritize RED unsupported claims)
+        for clm in claims:
+            clf = clm.get("classification")
+            if clf in ["UNSUPPORTED_CLAIM", "NEEDS_REVIEW"]:
+                reviews.append({
+                    "id": f"REV-{rev_id:03d}",
+                    "title": f"Claim Firewall: {clm.get('claim_text', '')[:60]}...",
+                    "severity": "Critical" if clf == "UNSUPPORTED_CLAIM" else "High",
+                    "category": "Claim Firewall",
+                    "source_page": clm.get("evidence", [{}])[0].get("page", 1) if clm.get("evidence") else 1,
+                    "details": clm.get("why_flagged", "Verification flag requiring human sign-off"),
+                    "evidence": clm.get("suggested_rewrite") or clm.get("claim_text", ""),
+                    "status": clm.get("review_status", "OPEN"),
+                    "notes": clm.get("reviewer_notes", ""),
+                    "claim_id": clm.get("claim_id")
+                })
+                rev_id += 1
+
         for r in risks:
             if r.get("human_review_required"):
                 reviews.append({
