@@ -1,65 +1,89 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, memo } from "react";
 
 /**
  * RequeLens Background Scroll Animation Configuration Manifest
  * Authoritative source for frame sequence assets, aspect ratios, and scrubbing parameters.
  */
 export const ANIMATION_CONFIG = {
-  totalFrames: 283,
+  totalFrames: 284,
   frameDir: "/requelens-frames",
   filenamePrefix: "ezgif-frame-",
-  fileExtension: ".jpg",
+  fileExtension: ".webp",
+  fallbackExtension: ".jpg",
   padLength: 3,
   nativeResolution: {
     width: 2560,
     height: 1440,
   },
   backgroundColor: "#080807",
-  interpolationFactor: 0.35, // Smooth, zero-lag responsive scrub
-  initialPreloadBatch: 30,   // Frames 1..30 preloaded upfront for instant interaction
-  windowRadius: 16,          // Prioritized proximity window around current scrub target
-  idleBatchSize: 6,          // Chunk size during browser idle frames
+  baseLambda: 18.0,              // Frame-rate-independent damping (~120ms settling time for responsive, silky tracking)
+  fastCatchupLambda: 36.0,        // Accelerated catch-up on rapid scrolls (~60ms settling time)
+  settleThreshold: 0.0001,        // Settle snapping threshold below which displayProgress snaps to target
+  subFrameBlendThreshold: 0.012,  // Minimum sub-frame blend difference (1.2%) required to trigger canvas redraw
+  initialPreloadBatch: 35,        // Frames 1..35 preloaded upfront
+  windowRadius: 20,               // Proximity sliding buffer around current scrub position
+  idleBatchSize: 10,              // Chunk size during browser idle frames
+  maxDPR: 1.5,                    // Caps backing store DPI to prevent 4K fill-rate stalls
 } as const;
 
-export function getFrameUrl(idx: number): string {
+export function getFrameUrl(idx: number, useFallback = false): string {
   const frameNumber = String(idx + 1).padStart(ANIMATION_CONFIG.padLength, "0");
-  return `${ANIMATION_CONFIG.frameDir}/${ANIMATION_CONFIG.filenamePrefix}${frameNumber}${ANIMATION_CONFIG.fileExtension}`;
+  const ext = useFallback ? ANIMATION_CONFIG.fallbackExtension : ANIMATION_CONFIG.fileExtension;
+  return `${ANIMATION_CONFIG.frameDir}/${ANIMATION_CONFIG.filenamePrefix}${frameNumber}${ext}`;
 }
 
-export function RecLensScrollExperience() {
+export const RecLensScrollExperience = memo(function RecLensScrollExperience() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   // References for animation state without causing re-renders
   const imagesRef = useRef<Array<HTMLImageElement | null>>(new Array(ANIMATION_CONFIG.totalFrames).fill(null));
-  const loadStatusRef = useRef<boolean[]>(new Array(ANIMATION_CONFIG.totalFrames).fill(false));
-  const currentFrameRef = useRef<number>(0);
-  const targetFrameRef = useRef<number>(0);
-  const lastDrawnFrameRef = useRef<number>(-1);
+  // 0 = unrequested, 1 = loading/decoding, 2 = loaded/ready, -1 = error
+  const loadStateRef = useRef<Int8Array>(new Int8Array(ANIMATION_CONFIG.totalFrames));
+
+  // Continuous floating-point progress tracking for cinematic smoothness
+  const targetProgressRef = useRef<number>(0);
+  const displayProgressRef = useRef<number>(0);
+  const lastFrameTimeRef = useRef<number>(0);
+  const lastDrawnFrameARef = useRef<number>(-1);
+  const lastDrawnBlendRef = useRef<number>(-1);
+  const lastPreloadFrameRef = useRef<number>(-1);
   const rafIdRef = useRef<number | null>(null);
-  const priorityQueueRef = useRef<Set<number>>(new Set());
   const isReducedMotionRef = useRef<boolean>(false);
+
+  // Pre-calculated canvas layout & cover-fit geometry (recalculated ONLY on resize)
+  const layoutRef = useRef({
+    width: 0,
+    height: 0,
+    dpr: 1,
+    maxScroll: 1,
+    drawX: 0,
+    drawY: 0,
+    drawW: 0,
+    drawH: 0,
+  });
 
   const [isFirstFrameLoaded, setIsFirstFrameLoaded] = useState<boolean>(false);
 
   // Find nearest loaded frame if current target frame is still downloading
   const getNearestLoadedFrame = useCallback((targetIdx: number): HTMLImageElement | null => {
     const images = imagesRef.current;
-    const loaded = loadStatusRef.current;
+    const states = loadStateRef.current;
 
-    if (loaded[targetIdx] && images[targetIdx]) {
+    if (states[targetIdx] === 2 && images[targetIdx]) {
       return images[targetIdx];
     }
 
-    // Search outwards from target frame index
+    // Bidirectional outwards search
     for (let offset = 1; offset < ANIMATION_CONFIG.totalFrames; offset++) {
       const prev = targetIdx - offset;
-      if (prev >= 0 && loaded[prev] && images[prev]) {
+      if (prev >= 0 && states[prev] === 2 && images[prev]) {
         return images[prev];
       }
       const next = targetIdx + offset;
-      if (next < ANIMATION_CONFIG.totalFrames && loaded[next] && images[next]) {
+      if (next < ANIMATION_CONFIG.totalFrames && states[next] === 2 && images[next]) {
         return images[next];
       }
     }
@@ -67,101 +91,197 @@ export function RecLensScrollExperience() {
     return null;
   }, []);
 
-  // Render a specific frame image onto the high-DPI canvas
-  const drawFrame = useCallback((img: HTMLImageElement) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    if (width === 0 || height === 0) return;
-
-    // Resize backing store only when viewport dimensions or DPR change
-    if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-    }
-
-    ctx.save();
-    ctx.scale(dpr, dpr);
-
-    // Deep obsidian/bronze background fill matching RequeLens theme
-    ctx.fillStyle = ANIMATION_CONFIG.backgroundColor;
-    ctx.fillRect(0, 0, width, height);
-
-    // Calculate object-fit: cover scaling to fill 100vw x 100vh without distortion
-    const imgWidth = img.naturalWidth || ANIMATION_CONFIG.nativeResolution.width;
-    const imgHeight = img.naturalHeight || ANIMATION_CONFIG.nativeResolution.height;
-    const scale = Math.max(width / imgWidth, height / imgHeight);
-
-    const drawW = imgWidth * scale;
-    const drawH = imgHeight * scale;
-    const drawX = (width - drawW) / 2;
-    const drawY = (height - drawH) / 2;
-
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
-    ctx.restore();
-  }, []);
-
-  // Preload a single frame
+  // Preload a single frame with off-thread asynchronous decoding
   const loadSingleFrame = useCallback((idx: number): Promise<HTMLImageElement | null> => {
     if (idx < 0 || idx >= ANIMATION_CONFIG.totalFrames) return Promise.resolve(null);
-    if (loadStatusRef.current[idx] && imagesRef.current[idx]) {
+    if (loadStateRef.current[idx] === 2 && imagesRef.current[idx]) {
       return Promise.resolve(imagesRef.current[idx]);
     }
+    if (loadStateRef.current[idx] === 1) {
+      return Promise.resolve(null);
+    }
+
+    loadStateRef.current[idx] = 1;
 
     return new Promise((resolve) => {
       const img = new Image();
       img.src = getFrameUrl(idx);
 
-      img.onload = () => {
-        imagesRef.current[idx] = img;
-        loadStatusRef.current[idx] = true;
-        resolve(img);
+      const onComplete = (loadedImg: HTMLImageElement) => {
+        imagesRef.current[idx] = loadedImg;
+        loadStateRef.current[idx] = 2;
+        resolve(loadedImg);
       };
 
-      img.onerror = () => {
-        console.warn(`[RecLensScrollExperience] Failed to load frame: ${idx}`);
-        resolve(null);
+      const onError = () => {
+        // Fallback to JPG format if WebP is unavailable
+        const fallbackImg = new Image();
+        fallbackImg.src = getFrameUrl(idx, true);
+        fallbackImg.onload = () => onComplete(fallbackImg);
+        fallbackImg.onerror = () => {
+          loadStateRef.current[idx] = -1;
+          resolve(null);
+        };
       };
+
+      img.onload = () => {
+        // Off-thread asynchronous decode to avoid main-thread jank during drawImage
+        if ("decode" in img) {
+          img
+            .decode()
+            .then(() => onComplete(img))
+            .catch(() => onComplete(img));
+        } else {
+          onComplete(img);
+        }
+      };
+
+      img.onerror = onError;
     });
   }, []);
 
-  // Prioritized loader: prioritize a window around current target frame
+  // Prioritized loader: concentric expansion (+1, -1, +2, -2...) around current target frame
   const loadWindowAround = useCallback((centerIdx: number, radius = ANIMATION_CONFIG.windowRadius) => {
+    const max = ANIMATION_CONFIG.totalFrames - 1;
     const start = Math.max(0, centerIdx - radius);
-    const end = Math.min(ANIMATION_CONFIG.totalFrames - 1, centerIdx + radius);
+    const end = Math.min(max, centerIdx + radius);
 
-    for (let i = start; i <= end; i++) {
-      if (!loadStatusRef.current[i]) {
-        priorityQueueRef.current.add(i);
-        loadSingleFrame(i);
+    // 1. Center frame
+    if (loadStateRef.current[centerIdx] === 0) {
+      loadSingleFrame(centerIdx);
+    }
+
+    // 2. Concentric alternating expansion: immediate neighbors first
+    for (let offset = 1; offset <= radius; offset++) {
+      const forward = centerIdx + offset;
+      if (forward <= end && loadStateRef.current[forward] === 0) {
+        loadSingleFrame(forward);
+      }
+      const backward = centerIdx - offset;
+      if (backward >= start && loadStateRef.current[backward] === 0) {
+        loadSingleFrame(backward);
       }
     }
   }, [loadSingleFrame]);
 
-  // Main scroll calculation & RAF animation loop
-  useEffect(() => {
-    // Check reduced motion preference
-    if (typeof window !== "undefined") {
-      isReducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Fast direct blit with optional sub-frame cross-fade
+  const renderCanvasFrame = useCallback((frameA: number, frameB: number, blend: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = ctxRef.current || canvas.getContext("2d", { alpha: false });
+    if (!ctx) return;
+    if (!ctxRef.current) ctxRef.current = ctx;
+
+    const { drawX, drawY, drawW, drawH } = layoutRef.current;
+    if (drawW <= 0 || drawH <= 0) return;
+
+    // 1. Get primary base frame
+    const imgA = getNearestLoadedFrame(frameA);
+    if (!imgA) return;
+
+    // 2. Draw base frame at full opacity
+    ctx.globalAlpha = 1.0;
+    ctx.drawImage(imgA, drawX, drawY, drawW, drawH);
+
+    // 3. Sub-frame adjacent cross-fade if frameB is ready and blend is visually meaningful
+    if (frameB > frameA && blend > ANIMATION_CONFIG.subFrameBlendThreshold) {
+      const isBLoaded = loadStateRef.current[frameB] === 2;
+      const imgB = isBLoaded ? imagesRef.current[frameB] : null;
+
+      if (imgB) {
+        ctx.globalAlpha = blend;
+        ctx.drawImage(imgB, drawX, drawY, drawW, drawH);
+        ctx.globalAlpha = 1.0;
+      }
     }
+  }, [getNearestLoadedFrame]);
+
+  // Update canvas sizing & cover geometry strictly on resize (NEVER per frame)
+  const updateLayout = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof window === "undefined") return;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    if (width === 0 || height === 0) return;
+
+    // Cap DPR to 1.5 to eliminate 4K pixel fill-rate stalls while retaining crispness
+    const dpr = Math.min(window.devicePixelRatio || 1, ANIMATION_CONFIG.maxDPR);
+    const canvasW = Math.floor(width * dpr);
+    const canvasH = Math.floor(height * dpr);
+
+    if (canvas.width !== canvasW || canvas.height !== canvasH) {
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+    }
+
+    // Precalculate cover geometry in backing-store coordinate space
+    const imgW = ANIMATION_CONFIG.nativeResolution.width;
+    const imgH = ANIMATION_CONFIG.nativeResolution.height;
+    const scale = Math.max(canvasW / imgW, canvasH / imgH);
+
+    const drawW = imgW * scale;
+    const drawH = imgH * scale;
+    const drawX = (canvasW - drawW) / 2;
+    const drawY = (canvasH - drawH) / 2;
+
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - height);
+
+    layoutRef.current = {
+      width,
+      height,
+      dpr,
+      maxScroll,
+      drawX,
+      drawY,
+      drawW,
+      drawH,
+    };
+
+    // Cache context reference
+    if (!ctxRef.current) {
+      ctxRef.current = canvas.getContext("2d", { alpha: false });
+    }
+
+    // Force redraw current state after resize
+    const maxIdx = ANIMATION_CONFIG.totalFrames - 1;
+    const frameFloat = Math.min(maxIdx, Math.max(0, displayProgressRef.current * maxIdx));
+    const frameA = Math.floor(frameFloat);
+    const frameB = Math.min(frameA + 1, maxIdx);
+    const blend = frameFloat - frameA;
+    renderCanvasFrame(frameA, frameB, blend);
+    lastDrawnFrameARef.current = frameA;
+    lastDrawnBlendRef.current = blend;
+  }, [renderCanvasFrame]);
+
+  // Main scroll calculation & ON-DEMAND RAF animation loop
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    isReducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Initialize layout geometry
+    updateLayout();
+
+    // Sync initial scroll progress on mount
+    const initialScroll = window.scrollY || window.pageYOffset || 0;
+    const maxScroll = layoutRef.current.maxScroll;
+    const initialProgress = Math.min(1, Math.max(0, initialScroll / maxScroll));
+    targetProgressRef.current = initialProgress;
+    displayProgressRef.current = initialProgress;
 
     // 1. Preload frame 0 immediately and render it behind the Hero on mount
     loadSingleFrame(0).then((img0) => {
       if (img0) {
         setIsFirstFrameLoaded(true);
-        drawFrame(img0);
-        lastDrawnFrameRef.current = 0;
+        renderCanvasFrame(0, 0, 0);
+        lastDrawnFrameARef.current = 0;
+        lastDrawnBlendRef.current = 0;
       }
     });
 
-    // 2. Preload first batch for smooth initial scroll
+    // 2. Preload initial batch for smooth initial scrub
     for (let i = 1; i <= ANIMATION_CONFIG.initialPreloadBatch; i++) {
       loadSingleFrame(i);
     }
@@ -174,7 +294,7 @@ export function RecLensScrollExperience() {
       const batchSize = ANIMATION_CONFIG.idleBatchSize;
       let count = 0;
       while (nextIdxToLoad < ANIMATION_CONFIG.totalFrames && count < batchSize) {
-        if (!loadStatusRef.current[nextIdxToLoad]) {
+        if (loadStateRef.current[nextIdxToLoad] === 0) {
           loadSingleFrame(nextIdxToLoad);
         }
         nextIdxToLoad++;
@@ -196,71 +316,106 @@ export function RecLensScrollExperience() {
       idleHandlerId = setTimeout(loadRemainingChunks, 200);
     }
 
-    // 4. Global Full-Page Scroll Listener
-    // Maps standard page scroll progress (0.0 to 1.0) directly across the 283 frames
-    const handleScroll = () => {
-      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (scrollableHeight <= 0) return;
+    // 4. ON-DEMAND RAF Render Loop:
+    // Frame-rate independent exponential smoothing with adaptive fast-catchup & sub-frame cross-fade
+    const renderLoop = (timestamp: number) => {
+      const now = timestamp || performance.now();
+      const lastTime = lastFrameTimeRef.current || now;
+      const dt = Math.min(0.05, Math.max(0.001, (now - lastTime) / 1000));
+      lastFrameTimeRef.current = now;
 
-      const currentScroll = window.scrollY || window.pageYOffset || 0;
-      const rawProgress = Math.min(1, Math.max(0, currentScroll / scrollableHeight));
+      const target = targetProgressRef.current;
+      const current = displayProgressRef.current;
+      const diff = target - current;
+      const absDiff = Math.abs(diff);
 
-      if (isReducedMotionRef.current) return;
+      let isSettled = false;
 
-      const calculatedTargetFrame = Math.min(
-        ANIMATION_CONFIG.totalFrames - 1,
-        Math.max(0, Math.floor(rawProgress * (ANIMATION_CONFIG.totalFrames - 1)))
-      );
+      if (absDiff > ANIMATION_CONFIG.settleThreshold) {
+        // Adaptive lambda:
+        // When diff is small (slow/subtle scroll), use baseLambda (18.0) for silky ~120ms settling
+        // When diff is large (rapid fast scroll), scale up to fastCatchupLambda (36.0) for immediate response
+        const ratio = Math.min(1, absDiff / 0.05);
+        const effectiveLambda =
+          ANIMATION_CONFIG.baseLambda +
+          Math.pow(ratio, 0.75) * (ANIMATION_CONFIG.fastCatchupLambda - ANIMATION_CONFIG.baseLambda);
 
-      targetFrameRef.current = calculatedTargetFrame;
+        // Frame-rate independent exponential smoothing
+        const alpha = 1 - Math.exp(-effectiveLambda * dt);
+        displayProgressRef.current += diff * alpha;
 
-      // Proactively prioritize loading frames around target position
-      loadWindowAround(calculatedTargetFrame, ANIMATION_CONFIG.windowRadius);
+        // Keep loop running while interpolating toward target
+        rafIdRef.current = requestAnimationFrame(renderLoop);
+      } else {
+        // Settled cleanly at target
+        displayProgressRef.current = target;
+        rafIdRef.current = null;
+        lastFrameTimeRef.current = 0;
+        isSettled = true;
+      }
+
+      // Convert continuous displayProgress to sub-frame float & adjacent integer indices
+      const maxIdx = ANIMATION_CONFIG.totalFrames - 1;
+      const frameFloat = Math.min(maxIdx, Math.max(0, displayProgressRef.current * maxIdx));
+      const frameA = Math.floor(frameFloat);
+      const frameB = Math.min(frameA + 1, maxIdx);
+      const blend = frameFloat - frameA;
+
+      // Only redraw when frameA changes, blend changes by more than threshold, or when settling
+      const frameChanged = frameA !== lastDrawnFrameARef.current;
+      const blendChanged = Math.abs(blend - lastDrawnBlendRef.current) >= ANIMATION_CONFIG.subFrameBlendThreshold;
+
+      if (frameChanged || blendChanged || isSettled) {
+        renderCanvasFrame(frameA, frameB, blend);
+        lastDrawnFrameARef.current = frameA;
+        lastDrawnBlendRef.current = blend;
+      }
     };
 
-    // 5. RAF Animation Loop with responsive, tight interpolation
-    const renderLoop = () => {
-      const target = targetFrameRef.current;
-      const current = currentFrameRef.current;
-
-      if (Math.abs(target - current) > 0.05) {
-        // Tight interpolation: silky smooth, zero lag, instant direction reversal
-        currentFrameRef.current += (target - current) * ANIMATION_CONFIG.interpolationFactor;
-      } else {
-        currentFrameRef.current = target;
+    const scheduleRender = () => {
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(renderLoop);
       }
+    };
 
-      const frameToDrawIdx = Math.round(currentFrameRef.current);
+    // 5. Global Full-Page Scroll Listener
+    // Uses continuous float progress without quantization
+    const handleScroll = () => {
+      if (isReducedMotionRef.current) return;
 
-      if (frameToDrawIdx !== lastDrawnFrameRef.current) {
-        const frameImg = getNearestLoadedFrame(frameToDrawIdx);
-        if (frameImg) {
-          drawFrame(frameImg);
-          lastDrawnFrameRef.current = frameToDrawIdx;
-        }
+      const currentScroll = window.scrollY || window.pageYOffset || 0;
+      const maxScroll = layoutRef.current.maxScroll;
+      const rawProgress = Math.min(1, Math.max(0, currentScroll / maxScroll));
+
+      targetProgressRef.current = rawProgress;
+      scheduleRender();
+
+      // Proactively prioritize loading frames around target position
+      const targetFrame = Math.round(rawProgress * (ANIMATION_CONFIG.totalFrames - 1));
+      if (Math.abs(targetFrame - lastPreloadFrameRef.current) >= 1) {
+        lastPreloadFrameRef.current = targetFrame;
+        loadWindowAround(targetFrame, ANIMATION_CONFIG.windowRadius);
       }
-
-      rafIdRef.current = requestAnimationFrame(renderLoop);
     };
 
     const handleResize = () => {
-      const currentImg = getNearestLoadedFrame(Math.round(currentFrameRef.current));
-      if (currentImg) drawFrame(currentImg);
+      updateLayout();
+      scheduleRender();
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize, { passive: true });
 
-    // Start RAF loop
-    rafIdRef.current = requestAnimationFrame(renderLoop);
-
-    // Initial trigger
+    // Initial render trigger
     handleScroll();
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
-      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
       if (idleHandlerId) {
         if ("cancelIdleCallback" in window) {
           (window as any).cancelIdleCallback(idleHandlerId);
@@ -269,7 +424,7 @@ export function RecLensScrollExperience() {
         }
       }
     };
-  }, [drawFrame, getNearestLoadedFrame, loadSingleFrame, loadWindowAround]);
+  }, [getNearestLoadedFrame, loadSingleFrame, loadWindowAround, renderCanvasFrame, updateLayout]);
 
   return (
     <div
@@ -294,4 +449,4 @@ export function RecLensScrollExperience() {
       )}
     </div>
   );
-}
+});

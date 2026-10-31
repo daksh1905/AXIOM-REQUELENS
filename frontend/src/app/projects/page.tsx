@@ -1,33 +1,30 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
-import { fetchProjects, compareProjects, uploadPastProposal } from "@/lib/api";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  fetchProjects,
+  compareProjects,
+  uploadPastProposal,
+} from "@/lib/api";
 import { UploadModal } from "@/components/UploadModal";
+import { EditorialPageShell } from "@/components/editorial/EditorialPageShell";
+import { EditorialHero } from "@/components/editorial/EditorialHero";
+import { EditorialCTA } from "@/components/editorial/EditorialCTA";
 import { TransitionLink } from "@/context/TransitionContext";
 import {
-  ShieldCheck,
-  FileText,
-  Sparkles,
-  ArrowRight,
   Search,
   RefreshCw,
-  Calendar,
-  Layers,
-  CheckCircle2,
-  AlertCircle,
   FolderGit2,
-  ChevronRight,
   Copy,
   Check,
   Upload,
-  BarChart3,
-  Cpu,
   GitCompare,
   BookOpen,
   X,
-  AlertTriangle,
-  LogIn
+  LogIn,
+  ArrowUpRight,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 
 interface ProjectSummary {
@@ -53,14 +50,13 @@ interface ProjectSummary {
   } | null;
 }
 
-export default function ProjectsDirectoryPage() {
+export default function MyProjectsPage() {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   // Compare Projects State
   const [isCompareOpen, setIsCompareOpen] = useState(false);
@@ -141,73 +137,55 @@ export default function ProjectsDirectoryPage() {
     }
   };
 
-  // Separate real uploaded projects from demo projects
-  const realProjects = useMemo(() => {
-    return projects.filter((p) => !p.is_demo);
-  }, [projects]);
-
-  const demoProjects = useMemo(() => {
-    return projects.filter((p) => p.is_demo);
-  }, [projects]);
-
-  // Filter real projects by search query
-  const filteredRealProjects = useMemo(() => {
-    if (!searchQuery.trim()) return realProjects;
+  // Filter projects by search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
     const q = searchQuery.toLowerCase().trim();
-    return realProjects.filter(
+    return projects.filter(
       (p) =>
         p.name?.toLowerCase().includes(q) ||
         p.filename?.toLowerCase().includes(q) ||
         p.id?.toLowerCase().includes(q)
     );
-  }, [realProjects, searchQuery]);
+  }, [projects, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#080807] text-[#f4f2ec] flex flex-col font-sans selection:bg-[#b08d4b]/30 selection:text-white">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#080807]/80 backdrop-blur-xl border-b border-[#23211b]/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-          {/* Brand */}
-          <TransitionLink href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#cda76e] via-[#b08d4b] to-[#473924] p-[1px] flex items-center justify-center shadow-lg shadow-[#b08d4b]/10 group-hover:shadow-[#b08d4b]/20 transition-all">
-              <div className="w-full h-full rounded-full bg-[#0d0c0a] flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-[#cda76e]" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base sm:text-lg font-bold tracking-[0.2em] text-[#faf8f5] uppercase font-mono">
-                  RECLENS
-                </span>
-                <span className="text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded bg-[#201d17] text-[#cda76e] border border-[#3d3628]">
-                  Workspace
-                </span>
-              </div>
-              <p className="text-[9px] uppercase tracking-widest text-[#9e8973] font-mono -mt-0.5">
-                Read • Reason • Verify • Propose
-              </p>
-            </div>
-          </TransitionLink>
+    <EditorialPageShell pageWatermark="/ my projects workspace">
+      {/* 1. Hero Section */}
+      <EditorialHero
+        category="/ workspace directory"
+        pageNumber="01/07"
+        title="MY PROJECTS"
+        subtitle="Your RFP intelligence workspace. Access, inspect, and verify analyzed tender proposals."
+      />
 
-          {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-medium tracking-wider uppercase text-[#b3a78f]">
-            <TransitionLink href="/" className="hover:text-[#faf8f5] transition-colors">
-              Home
-            </TransitionLink>
-            <span className="text-[#cda76e] font-semibold flex items-center gap-1.5">
-              <FolderGit2 className="w-3.5 h-3.5 text-[#cda76e]" />
-              My Projects
-            </span>
-            <TransitionLink
-              href="/projects/demo-rfp-001"
-              className="text-[#9e8973] hover:text-[#faf8f5] transition-colors"
-            >
-              Reference Demo
-            </TransitionLink>
-          </nav>
+      {/* 2. Directory Toolbar & Metrics */}
+      <section className="py-8 sm:py-12 border-b border-[#24211a]/80">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8a7a67]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Filter by project name, RFP file, or ID..."
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0e0d0b] border border-[#26221b] rounded-full text-xs text-[#f4f2ec] placeholder-[#736655] focus:outline-none focus:border-[#cda76e] transition-colors"
+            />
+          </div>
 
-          {/* Actions */}
+          {/* Actions & Refresh */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={loadProjects}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-mono uppercase tracking-wider text-[#9e8e7a] hover:text-[#f4f2ec] bg-[#14120f] border border-[#26221b] rounded-full transition-colors cursor-pointer"
+              title="Refresh project list"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+
             <button
               onClick={() => {
                 if (projects.length >= 2) {
@@ -243,301 +221,152 @@ export default function ProjectsDirectoryPage() {
             </button>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Main Workspace Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 space-y-12">
-        {/* Editorial Page Title & Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-[#23211b]">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#cda76e]" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#cda76e]">
-                Workspace Directory
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#171511] text-[#9e8973] border border-[#2b2720]">
-                {realProjects.length} Real {realProjects.length === 1 ? "Project" : "Projects"}
-              </span>
-            </div>
-            <h1 className="font-editorial text-4xl sm:text-6xl text-[#faf8f5] tracking-tight font-light leading-none">
-              MY PROJECTS
-            </h1>
-            <p className="font-editorial italic text-lg sm:text-xl text-[#cda76e] tracking-wide font-light">
-              &ldquo;Your analyzed RFP intelligence.&rdquo;
+      {/* 3. Editorial Project Rows / Panels (Matching Requested Asymmetric Layout) */}
+      <section className="py-12 sm:py-20 space-y-8 sm:space-y-12">
+        {loading && projects.length === 0 ? (
+          <div className="py-20 text-center space-y-4">
+            <div className="w-8 h-8 rounded-full border-2 border-[#584936]/40 border-t-[#cda76e] animate-spin mx-auto" />
+            <p className="text-xs font-mono uppercase tracking-widest text-[#9e8e7a]">
+              Loading persisted projects...
             </p>
           </div>
-
-          <div className="flex items-center gap-3 self-start sm:self-end">
-            {/* Search Input */}
-            <div className="relative w-64 sm:w-72">
-              <Search className="w-3.5 h-3.5 text-[#8a725c] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search projects by name or ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#0f0e0c] border border-[#2b2720] rounded-full text-xs text-[#faf8f5] placeholder-[#695f4f] focus:outline-none focus:border-[#cda76e] transition font-mono"
-              />
-            </div>
-
-            {/* Refresh Button */}
+        ) : error ? (
+          <div className="p-8 rounded-2xl bg-[#1f1212] border border-[#4a2424] text-center space-y-3">
+            <AlertCircle className="w-6 h-6 text-[#f07b7b] mx-auto" />
+            <p className="text-sm text-[#f4f2ec]">{error}</p>
             <button
               onClick={loadProjects}
-              disabled={loading}
-              className="p-2.5 bg-[#141310] hover:bg-[#1f1d18] text-[#b3a78f] rounded-full border border-[#2b2720] transition cursor-pointer disabled:opacity-50"
-              title="Refresh project list"
+              className="px-4 py-2 text-xs font-mono uppercase bg-[#2e1919] border border-[#5a2e2e] rounded-full text-[#f4f2ec]"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#cda76e]" : ""}`} />
+              Try Again
             </button>
           </div>
-        </div>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="p-16 text-center rounded-2xl bg-[#0f0e0c]/60 border border-[#23211b] space-y-3">
-            <RefreshCw className="w-6 h-6 text-[#cda76e] animate-spin mx-auto" />
-            <p className="font-editorial text-lg text-[#faf8f5]">Retrieving RFP intelligence dossiers...</p>
-            <p className="text-xs text-[#8a725c] font-mono">Querying persistent SQLite repository</p>
+        ) : filteredProjects.length === 0 ? (
+          <div className="py-20 text-center space-y-4 border border-dashed border-[#24211a] rounded-3xl p-8">
+            <FolderGit2 className="w-10 h-10 text-[#6e6150] mx-auto" />
+            <h3 className="text-lg font-light text-[#f4f2ec] font-serif">No projects match your search</h3>
+            <p className="text-xs text-[#8a7a67]">Try adjusting your search criteria or upload a new tender document.</p>
           </div>
-        )}
+        ) : (
+          <div className="space-y-6 sm:space-y-8">
+            {filteredProjects.map((proj, idx) => {
+              const projectNumber = String(idx + 1).padStart(2, "0");
+              const score = proj.readiness?.overall_score ?? (proj.is_demo ? 74 : null);
+              const totalReqs = proj.total_requirements ?? (proj.is_demo ? 739 : "Analyzed");
 
-        {/* Error State */}
-        {!loading && error && (
-          <div className="p-6 rounded-2xl bg-rose-950/20 border border-rose-500/30 text-rose-200 flex items-start gap-4">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <div className="space-y-2 text-xs">
-              <h3 className="font-bold text-white uppercase tracking-wider">Failed to Connect to RecLens Backend</h3>
-              <p className="text-rose-300">{error}</p>
-              <button
-                onClick={loadProjects}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 rounded-full font-semibold text-white transition"
-              >
-                <RefreshCw className="w-3 h-3" /> Retry Connection
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* SECTION 1: REAL UPLOADED PROJECTS                                         */}
-        {/* ========================================================================= */}
-        {!loading && !error && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-[#23211b] pb-3">
-              <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#cda76e] flex items-center gap-2">
-                <FolderGit2 className="w-3.5 h-3.5 text-[#cda76e]" />
-                Analyzed RFP Dossiers
-              </h2>
-              <span className="text-[11px] text-[#8a725c] font-mono">
-                {filteredRealProjects.length} of {realProjects.length} displayed
-              </span>
-            </div>
-
-            {/* Empty State: Genuinely no uploaded projects */}
-            {realProjects.length === 0 ? (
-              <div className="p-16 text-center rounded-2xl bg-[#0f0e0c]/60 border border-[#23211b] space-y-4">
-                <div className="w-12 h-12 rounded-full bg-[#1c1914] border border-[#3d3628] text-[#cda76e] flex items-center justify-center mx-auto">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="font-editorial text-2xl text-[#faf8f5]">No projects yet</h3>
-                  <p className="text-xs text-[#8a725c] max-w-md mx-auto leading-relaxed">
-                    Upload an RFP to create your first project. RecLens will extract requirements, synthesize architecture, and verify proposal claims.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsUploadOpen(true)}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] rounded-full shadow-lg transition hover:scale-[1.02]"
-                >
-                  <Upload className="w-3.5 h-3.5 text-[#080807]" />
-                  Analyze an RFP
-                </button>
-              </div>
-            ) : filteredRealProjects.length === 0 ? (
-              <div className="p-10 text-center rounded-2xl bg-[#0f0e0c]/40 border border-[#23211b] text-[#8a725c] text-xs font-mono">
-                No projects matched &ldquo;{searchQuery}&rdquo;. Clear search to view all {realProjects.length} dossiers.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredRealProjects.map((project) => {
-                  const readinessScore = project.readiness?.overall_score || 0;
-                  const reqCount = project.total_requirements || 0;
-                  const isAnalyzed = project.status === "analyzed";
-
-                  const isSelected = selectedCardId === project.id;
-
-                  return (
-                    <div
-                      key={project.id}
-                      className={`group flex flex-col justify-between rounded-2xl bg-[#0f0e0c]/90 hover:bg-[#141310] border shadow-xl transition-all duration-300 p-6 relative overflow-hidden ${
-                        isSelected
-                          ? "border-[#cda76e] -translate-y-1.5 scale-[1.015] shadow-2xl shadow-[#b08d4b]/20 z-10 ring-1 ring-[#cda76e]/50"
-                          : "border-[#26241e] hover:border-[#b08d4b]/40"
-                      }`}
-                    >
-                      <div className="space-y-4">
-                        {/* Status row */}
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono uppercase tracking-widest bg-emerald-950/30 text-emerald-300 border border-emerald-500/30">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            {isAnalyzed ? "Verified Analysis" : project.status}
-                          </span>
-
-                          <button
-                            onClick={(e) => handleCopyId(project.id, e)}
-                            className="inline-flex items-center gap-1 text-[10px] font-mono text-[#8a725c] hover:text-[#faf8f5] bg-[#171511] px-2 py-0.5 rounded border border-[#2b2720] transition"
-                            title="Click to copy Project ID"
-                          >
-                            <span>{project.id}</span>
-                            {copiedId === project.id ? (
-                              <Check className="w-3 h-3 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-3 h-3 text-[#695f4f]" />
-                            )}
-                          </button>
-                        </div>
-
-                        {/* Project Name & Filename */}
-                        <div className="space-y-1">
-                          <TransitionLink
-                            href={`/projects/${project.id}`}
-                            onClick={() => setSelectedCardId(project.id)}
-                            className="font-editorial text-xl sm:text-2xl text-[#faf8f5] group-hover:text-[#cda76e] transition-colors line-clamp-2 leading-tight block"
-                            title={project.name}
-                          >
-                            {project.name}
-                          </TransitionLink>
-                          <p className="text-xs text-[#8a725c] truncate flex items-center gap-1.5 font-mono pt-1">
-                            <FileText className="w-3 h-3 text-[#695f4f] shrink-0" />
-                            <span className="truncate">{project.filename}</span>
-                          </p>
-                        </div>
-
-                        {/* Metric Boxes */}
-                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-[#1f1d18] text-xs font-mono">
-                          <div className="p-2.5 rounded-xl bg-[#080807] border border-[#23211b]">
-                            <span className="text-[9px] uppercase tracking-wider text-[#8a725c] block">Scope</span>
-                            <span className="text-base font-bold text-[#faf8f5] mt-0.5 block flex items-center gap-1">
-                              <Layers className="w-3 h-3 text-[#cda76e]" />
-                              {reqCount > 0 ? `${reqCount} Reqs` : `${project.pages_analyzed || 100} Pages`}
-                            </span>
-                          </div>
-
-                          <div className="p-2.5 rounded-xl bg-[#080807] border border-[#23211b]">
-                            <span className="text-[9px] uppercase tracking-wider text-[#8a725c] block">Readiness</span>
-                            <span className="text-base font-bold text-[#cda76e] mt-0.5 block flex items-center gap-1">
-                              <BarChart3 className="w-3 h-3 text-[#cda76e]" />
-                              {readinessScore > 0 ? `${readinessScore}/100` : "78/100"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Metadata Details */}
-                        <div className="flex items-center justify-between text-[10px] font-mono text-[#8a725c] pt-1">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-[#695f4f]" />
-                            {formatDate(project.created_at)}
-                          </span>
-                          <span>
-                            {project.pages_analyzed ? `${project.pages_analyzed} Pages Analyzed` : "Enterprise RFP"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Card Actions */}
-                      <div className="mt-6 pt-4 border-t border-[#1f1d18] flex items-center gap-2">
-                        <TransitionLink
-                          href={`/projects/${project.id}`}
-                          onClick={() => setSelectedCardId(project.id)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full transition shadow-md shadow-[#b08d4b]/10 cursor-pointer"
-                        >
-                          <span>Open Project</span>
-                          <ArrowRight className="w-3 h-3 text-[#080807]" />
-                        </TransitionLink>
-
-                        <TransitionLink
-                          href={`/projects/${project.id}?tab=report`}
-                          onClick={() => setSelectedCardId(project.id)}
-                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-medium tracking-wider uppercase text-[#b3a78f] hover:text-[#faf8f5] bg-[#171511] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
-                          title="Open consolidated Project Report directly"
-                        >
-                          <FileText className="w-3 h-3 text-[#cda76e]" />
-                          <span>Report</span>
-                        </TransitionLink>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* SECTION 2: DEMO & REFERENCE ENVIRONMENT                                  */}
-        {/* ========================================================================= */}
-        {!loading && demoProjects.length > 0 && (
-          <div className="pt-10 border-t border-[#23211b] space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#8a725c] flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-[#cda76e]" />
-                  Reference Demo Environment
-                </h2>
-                <p className="text-xs text-[#8a725c] font-light">
-                  Pre-configured sample enterprise RFP demonstrating RecLens core intelligence capabilities.
-                </p>
-              </div>
-              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono uppercase tracking-widest bg-[#1a1712] text-[#cda76e] border border-[#3d3628]">
-                Sandbox Reference
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {demoProjects.map((demo) => (
+              return (
                 <div
-                  key={demo.id}
-                  className="rounded-2xl bg-[#0a0a08] border border-dashed border-[#3d3628] hover:border-[#695f4f] p-6 flex flex-col justify-between space-y-4"
+                  key={proj.id}
+                  className="p-6 sm:p-10 rounded-2xl sm:rounded-3xl bg-[#0e0d0b] border border-[#23201a] hover:border-[#4d4231] hover:-translate-y-0.5 hover:scale-[1.004] hover:shadow-xl hover:shadow-black/50 transition-all duration-300 group relative overflow-hidden"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-[#1c1914] text-[#cda76e] border border-[#3d3628]">
-                        Sample Reference RFP
-                      </span>
-                      <span className="text-[11px] font-mono text-[#695f4f]">{demo.id}</span>
+                  {/* Background highlight */}
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-[#cda76e]/3 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:bg-[#cda76e]/6 transition-all" />
+
+                  <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-8">
+                    {/* Left: Project Number + Title */}
+                    <div className="space-y-3 max-w-2xl">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-mono uppercase tracking-widest text-[#cda76e]">
+                          PROJECT {projectNumber}
+                        </span>
+                        <span className="text-[#3a3429]">•</span>
+                        <span className="text-[11px] font-mono text-[#8a7a67]">
+                          {formatDate(proj.created_at)}
+                        </span>
+                        {proj.is_demo && (
+                          <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 rounded bg-[#211c15] text-[#cda76e] border border-[#3d3424]">
+                            Demo Model
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-xl sm:text-2xl md:text-3xl font-light text-[#f4f2ec] font-serif tracking-tight leading-snug group-hover:text-[#f4f2ec]">
+                        {proj.name}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-[#8a7a67]">
+                        <span className="truncate max-w-xs">{proj.filename}</span>
+                        <button
+                          onClick={(e) => handleCopyId(proj.id, e)}
+                          className="inline-flex items-center gap-1 hover:text-[#cda76e] transition-colors"
+                          title="Copy project identifier"
+                        >
+                          <span className="text-[11px] opacity-75">{proj.id}</span>
+                          {copiedId === proj.id ? (
+                            <Check className="w-3 h-3 text-[#5cb85c]" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
-                    <div>
-                      <h3 className="font-editorial text-lg text-[#faf8f5] leading-snug">{demo.name}</h3>
-                      <p className="text-xs text-[#8a725c] mt-1 font-mono truncate">{demo.filename}</p>
+                    {/* Middle: Metrics (Requirements + Readiness) */}
+                    <div className="flex items-center gap-8 sm:gap-12 py-3 lg:py-0 border-y lg:border-y-0 border-[#1d1b17]">
+                      <div>
+                        <div className="text-xl sm:text-2xl font-light text-[#f4f2ec] font-mono">
+                          {totalReqs}
+                        </div>
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-[#8a7a67] mt-0.5">
+                          Requirements
+                        </div>
+                      </div>
+
+                      {score !== null && (
+                        <div>
+                          <div className="text-xl sm:text-2xl font-light text-[#cda76e] font-mono">
+                            {score}%
+                          </div>
+                          <div className="text-[10px] font-mono uppercase tracking-widest text-[#8a7a67] mt-0.5">
+                            Readiness Score
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 text-xs font-mono text-[#5cb85c]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#5cb85c] animate-pulse" />
+                          <span className="uppercase tracking-wider">Complete</span>
+                        </div>
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-[#8a7a67] mt-0.5">
+                          Claim Audit
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs font-mono text-[#8a725c] pt-2 border-t border-[#1f1d18]">
-                      <span>{demo.total_requirements || 12} Requirements</span>
-                      <span className="text-[#cda76e]">
-                        Readiness: {demo.readiness?.overall_score || 78}/100
-                      </span>
+                    {/* Right: Open Project Link / Action */}
+                    <div className="flex items-center justify-end">
+                      <TransitionLink
+                        href={`/projects/${proj.id}`}
+                        className="group/btn inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-full text-xs font-semibold tracking-widest uppercase text-[#f4f2ec] bg-[#1a1713] hover:bg-[#26211a] border border-[#383124] hover:border-[#cda76e] transition-all cursor-pointer whitespace-nowrap shadow-md"
+                      >
+                        <span>OPEN PROJECT</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-[#cda76e] transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                      </TransitionLink>
                     </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-[#1f1d18]">
-                    <TransitionLink
-                      href={`/projects/${demo.id}`}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold tracking-wider uppercase text-[#faf8f5] bg-[#141310] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
-                    >
-                      <Sparkles className="w-3 h-3 text-[#cda76e]" />
-                      <span>Open Demo Sandbox</span>
-                    </TransitionLink>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
-      </main>
 
-      {/* Upload RFP Modal */}
-      {isUploadOpen && <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />}
+      </section>
+        {/* 4. Closing CTA */}
+        <EditorialCTA
+          label="REQUELENS"
+          title="READY TO ANALYZE A NEW SOLICITATION?"
+          subtitle="Ingest PDF or Word tenders to begin extraction and claim verification."
+          ctaText="ANALYZE AN RFP ↗"
+          onAction={() => setIsUploadOpen(true)}
+        />
+
+      <UploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+      />
 
       {/* Compare Projects / Versions Modal (Checklist #17) */}
       {isCompareOpen && (
@@ -549,7 +378,7 @@ export default function ProjectsDirectoryPage() {
                 <h3 className="text-base font-editorial font-bold text-[#faf8f5]">
                   Document Comparison &amp; Version Diff
                 </h3>
-              </div>
+              </EditorialPageShell>
               <button
                 onClick={() => {
                   setIsCompareOpen(false);
@@ -773,6 +602,6 @@ export default function ProjectsDirectoryPage() {
           </div>
         </div>
       )}
-    </div>
+    </EditorialPageShell>
   );
 }

@@ -308,7 +308,7 @@ def export_docx(project_id: str):
 
 @app.get("/api/projects/{project_id}/export/pdf")
 def export_pdf(project_id: str):
-    proj = repo.get_project(project_id)
+    proj = repo.get_project(project_id) 
     if not proj:
         raise HTTPException(status_code=404, detail="Project not found")
         
