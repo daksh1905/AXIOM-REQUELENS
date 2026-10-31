@@ -109,6 +109,81 @@ export function getExportPdfUrl(projectId: string) {
   return `${API_BASE}/api/projects/${projectId}/export/pdf`;
 }
 
+export function getDocumentUrl(projectId: string) {
+  return `${API_BASE}/api/projects/${projectId}/document`;
+}
+
+export async function updateRequirement(projectId: string, reqId: string, payload: any) {
+  const res = await fetchWithFallback(`/api/projects/${projectId}/requirements/${reqId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to update requirement");
+  return res.json();
+}
+
+export async function updateRiskItem(projectId: string, riskId: string, payload: any) {
+  const res = await fetchWithFallback(`/api/projects/${projectId}/risks/${riskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to update risk");
+  return res.json();
+}
+
+export async function updateAssumptionItem(projectId: string, asmId: string, payload: any) {
+  const res = await fetchWithFallback(`/api/projects/${projectId}/assumptions/${asmId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to update assumption");
+  return res.json();
+}
+
+export async function updateProposalSection(projectId: string, sectionNum: number, payload: { title?: string; content?: string }) {
+  const res = await fetchWithFallback(`/api/projects/${projectId}/proposal/sections/${sectionNum}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Failed to update proposal section");
+  return res.json();
+}
+
+export async function regenerateProposalSection(projectId: string, sectionNum: number, customInstructions?: string) {
+  const res = await fetchWithFallback(`/api/projects/${projectId}/proposal/sections/${sectionNum}/regenerate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ custom_instructions: customInstructions || null }),
+  });
+  if (!res.ok) throw new Error("Failed to regenerate proposal section");
+  return res.json();
+}
+
+export async function compareProjects(projectId1: string, projectId2: string) {
+  const res = await fetchWithFallback(`/api/projects/compare`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ project_id_1: projectId1, project_id_2: projectId2 }),
+  });
+  if (!res.ok) throw new Error("Failed to compare projects");
+  return res.json();
+}
+
+export async function uploadPastProposal(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetchWithFallback(`/api/projects/upload-past-proposal`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Failed to upload past proposal");
+  return res.json();
+}
+
 export function getReportDocxUrl(projectId: string) {
   return `${API_BASE}/api/projects/${projectId}/report/docx`;
 }

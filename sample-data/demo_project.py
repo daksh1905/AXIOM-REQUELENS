@@ -1271,6 +1271,50 @@ def get_demo_project_data() -> Dict[str, Any]:
         }
     ]
 
+    # 16B. Explicit Missing Information items
+    missing_information = [
+        {
+            "id": "MISS-001",
+            "category": "Budget",
+            "missing_detail": "Indicative commercial budget ceiling and payment milestone fee caps are omitted from the RFP.",
+            "why_it_matters": "Without an authoritative budget or price ceiling, infrastructure tiering and labor allocations cannot be bounded.",
+            "client_clarification_question": "What is the designated commercial budget ceiling and payment milestone retention percentage for this engagement?",
+            "status": "Open"
+        },
+        {
+            "id": "MISS-002",
+            "category": "User Capacity",
+            "missing_detail": "Peak concurrent active users (CCU) and daily transaction volume thresholds are not specified.",
+            "why_it_matters": "Auto-scaling cluster sizing, compute node counts, and database IOPS provisioning depend directly on concurrency metrics.",
+            "client_clarification_question": "What are the anticipated peak concurrent active users and average daily transaction volumes?",
+            "status": "Open"
+        },
+        {
+            "id": "MISS-003",
+            "category": "Disaster Recovery",
+            "missing_detail": "Recovery Time Objective (RTO) and Recovery Point Objective (RPO) SLA targets are undefined.",
+            "why_it_matters": "Dictates whether active-active cross-region hot redundancy is required or if warm multi-AZ replication suffices.",
+            "client_clarification_question": "What are the mandated RTO (hours/minutes) and RPO (data loss window) targets for business continuity?",
+            "status": "Open"
+        },
+        {
+            "id": "MISS-004",
+            "category": "Technical Specifications",
+            "missing_detail": "Client network perimeter interface and dedicated VPC landing zone topology are unspecified.",
+            "why_it_matters": "Third-party network ingress and private peering firewall rules require predefined network boundaries.",
+            "client_clarification_question": "Will the client provide an existing configured cloud VPC/landing zone or should vendor provision new sovereign tenancy?",
+            "status": "Open"
+        },
+        {
+            "id": "MISS-005",
+            "category": "Timeline & Governance",
+            "missing_detail": "Client review and User Acceptance Testing (UAT) sign-off SLA turnaround window is omitted.",
+            "why_it_matters": "Client defect validation delays directly impact final deployment and production cutover milestones.",
+            "client_clarification_question": "What is the expected turnaround window (business days) for client UAT defect review and formal milestone sign-off?",
+            "status": "Open"
+        }
+    ]
+
     # 17. Calculated Proposal Readiness Score (78/100)
     readiness = {
         "overall_score": 78,
@@ -1295,6 +1339,8 @@ def get_demo_project_data() -> Dict[str, Any]:
         "ambiguities_count": 9,
         "clarifications": clarifications,
         "clarifications_count": 6,
+        "missing_information": missing_information,
+        "missing_information_count": len(missing_information),
         "assumptions": assumptions,
         "evaluation_criteria": evaluation_criteria,
         "architecture_solution": architecture_solution,

@@ -5,6 +5,79 @@ from datetime import datetime
 
 class ExportService:
     @staticmethod
+    def generate_architecture_diagram_image(data: Dict[str, Any]) -> Optional[io.BytesIO]:
+        """
+        Renders a high-resolution professional architecture topology diagram PNG
+        for embedding directly into exported DOCX and PDF documents.
+        """
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            import matplotlib.patches as patches
+
+            fig, ax = plt.subplots(figsize=(10, 5.2), dpi=160)
+            fig.patch.set_facecolor('#0f172a')
+            ax.set_facecolor('#0f172a')
+            ax.set_xlim(0, 100)
+            ax.set_ylim(0, 100)
+            ax.axis('off')
+
+            # Title Header
+            ax.text(50, 95, "BidForge AI / RecLens — System Architecture Topology",
+                    color='#f8fafc', fontsize=12, fontweight='bold', ha='center', va='center')
+
+            # 1. Edge & Client Entry Box
+            rect1 = patches.FancyBboxPatch((4, 48), 24, 38, boxstyle="round,pad=1.5",
+                                          facecolor='#1e293b', edgecolor='#38bdf8', linewidth=1.5)
+            ax.add_patch(rect1)
+            ax.text(16, 82, "Edge & Client Tier", color='#38bdf8', fontsize=9, fontweight='bold', ha='center')
+            ax.text(16, 70, "Client Gateway &\nBrowser Users\n(TLS 1.3 / HTTPS)", color='#cbd5e1', fontsize=7.5, ha='center')
+            ax.text(16, 54, "COMP-FE-01:\nNext.js 14 Portal", color='#e2e8f0', fontsize=8, fontweight='bold', ha='center')
+
+            # 2. Security & Identity Box
+            rect2 = patches.FancyBboxPatch((36, 62), 26, 24, boxstyle="round,pad=1.5",
+                                          facecolor='#1e1b4b', edgecolor='#a855f7', linewidth=1.5)
+            ax.add_patch(rect2)
+            ax.text(49, 82, "Zero-Trust Security Tier", color='#c084fc', fontsize=9, fontweight='bold', ha='center')
+            ax.text(49, 70, "COMP-SEC-01:\nKeycloak Enterprise IAM\n(FIDO2 / SAML / OIDC)", color='#f3e8ff', fontsize=8, ha='center')
+
+            # 3. Compute & Integration Box
+            rect3 = patches.FancyBboxPatch((36, 12), 26, 42, boxstyle="round,pad=1.5",
+                                          facecolor='#022c22', edgecolor='#10b981', linewidth=1.5)
+            ax.add_patch(rect3)
+            ax.text(49, 50, "Compute & App Tier", color='#34d399', fontsize=9, fontweight='bold', ha='center')
+            ax.text(49, 38, "COMP-INT-01: Kong Gateway\n(mTLS / Rate-Limiting)", color='#d1fae5', fontsize=7.5, ha='center')
+            ax.text(49, 22, "COMP-CORE-01: FastAPI\nMicroservices Cluster", color='#ecfdf5', fontsize=8, fontweight='bold', ha='center')
+
+            # 4. Persistence & Observability Box
+            rect4 = patches.FancyBboxPatch((70, 48), 26, 38, boxstyle="round,pad=1.5",
+                                          facecolor='#1c1917', edgecolor='#f59e0b', linewidth=1.5)
+            ax.add_patch(rect4)
+            ax.text(83, 82, "Persistence & Audit Tier", color='#fbbf24', fontsize=9, fontweight='bold', ha='center')
+            ax.text(83, 68, "COMP-DATA-01:\nPostgreSQL 16 Clustered\n(Encrypted SQL / Multi-AZ)", color='#fef3c7', fontsize=7.5, ha='center')
+            ax.text(83, 54, "COMP-OBS-01:\nPrometheus & Grafana SIEM", color='#fde68a', fontsize=7.5, ha='center')
+
+            # Flow Direction Arrows
+            ax.annotate("", xy=(36, 74), xytext=(28, 74),
+                        arrowprops=dict(arrowstyle="->", color='#38bdf8', lw=1.5))
+            ax.annotate("", xy=(36, 38), xytext=(28, 54),
+                        arrowprops=dict(arrowstyle="->", color='#10b981', lw=1.5))
+            ax.annotate("", xy=(70, 68), xytext=(62, 28),
+                        arrowprops=dict(arrowstyle="->", color='#f59e0b', lw=1.5))
+            ax.annotate("", xy=(70, 56), xytext=(62, 56),
+                        arrowprops=dict(arrowstyle="->", color='#c084fc', lw=1.2, linestyle='--'))
+
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', bbox_inches='tight', facecolor=fig.get_facecolor())
+            plt.close(fig)
+            buf.seek(0)
+            return buf
+        except Exception as e:
+            print(f"[ExportService] Diagram render notice: {e}")
+            return None
+
+    @staticmethod
     def generate_docx(project: Dict[str, Any], data: Dict[str, Any]) -> io.BytesIO:
         import docx
         from docx import Document
@@ -94,6 +167,13 @@ class ExportService:
         arch_p = doc.add_paragraph(arch.get("summary", "Modular, zero-trust cloud architecture."))
         arch_p.paragraph_format.line_spacing = 1.15
         
+        # Visual Architecture Diagram
+        diag_buf = ExportService.generate_architecture_diagram_image(data)
+        if diag_buf:
+            doc.add_heading("System Architecture Diagram & Component Topology", level=2)
+            doc.add_picture(diag_buf, width=Inches(6.2))
+            doc.add_paragraph()
+
         # Technology Stack Table
         tech_stack = data.get("tech_stack", [])
         if tech_stack:
@@ -229,7 +309,7 @@ class ExportService:
     @staticmethod
     def generate_pdf(project: Dict[str, Any], data: Dict[str, Any]) -> io.BytesIO:
         from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image as RLImage
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib import colors
 
@@ -321,6 +401,13 @@ class ExportService:
         story.append(Paragraph("1. Technical Architecture &amp; Technology Stack", h1_style))
         arch = data.get("architecture_solution", {})
         story.append(Paragraph(arch.get("summary", "Zero-trust modular cloud platform.").replace('&', '&amp;'), body_style))
+        story.append(Spacer(1, 6))
+
+        # Embed Architecture Diagram
+        diag_buf = ExportService.generate_architecture_diagram_image(data)
+        if diag_buf:
+            story.append(RLImage(diag_buf, width=540, height=270))
+            story.append(Spacer(1, 10))
         
         tech_stack = data.get("tech_stack", [])
         if tech_stack:

@@ -268,7 +268,7 @@ class ClaimFirewall:
                     "traceability_chain": {
                         "claim_text": f"Mandate for {tech_name}",
                         "proposal_section": "Section 5: Technology Stack",
-                        "architecture_component": item.get("architecture_components", ["COMP-CORE-01"])[0],
+                        "architecture_component": (item.get("architecture_components") or ["COMP-CORE-01"])[0],
                         "requirement_id": "N/A",
                         "page": 1
                     },
@@ -329,8 +329,8 @@ class ClaimFirewall:
                     "traceability_chain": {
                         "claim_text": f"Selection of {tech_name}",
                         "proposal_section": "Section 5: Technology Stack",
-                        "architecture_component": item.get("architecture_components", ["COMP-CORE-01"])[0],
-                        "requirement_id": item.get("requirements_addressed", ["N/A"])[0],
+                        "architecture_component": (item.get("architecture_components") or ["COMP-CORE-01"])[0],
+                        "requirement_id": (item.get("requirements_addressed") or ["N/A"])[0],
                         "page": 1
                     },
                     "why_flagged": None,
@@ -602,8 +602,8 @@ class ClaimFirewall:
                     "traceability_chain": {
                         "claim_text": stmt,
                         "proposal_section": "Section 14: Commercial Assumptions",
-                        "architecture_component": asm.get("related_architecture_components", ["N/A"])[0],
-                        "requirement_id": asm.get("related_requirement_ids", ["N/A"])[0],
+                        "architecture_component": (asm.get("related_architecture_components") or ["N/A"])[0],
+                        "requirement_id": (asm.get("related_requirement_ids") or ["N/A"])[0],
                         "page": 1
                     },
                     "why_flagged": (

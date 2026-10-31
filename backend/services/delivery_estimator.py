@@ -3,8 +3,8 @@ from typing import List, Dict, Any, Tuple
 
 class DeliveryEstimator:
     """
-    Estimates delivery feasibility, team composition, and implementation timeline
-    from normalized requirements, risks, and architecture components.
+    Estimates delivery feasibility, team composition, quantitative effort,
+    and implementation timeline from normalized requirements, risks, and architecture components.
     
     CRITICAL RULE:
     All estimates are transparently labeled as AI-assisted preliminary estimates.
@@ -28,7 +28,7 @@ class DeliveryEstimator:
         
         # Categorical lists and counts
         sec_reqs = [r for r in requirements if r.get("category") == "Security" or r.get("requirement_type") == "SECURITY"]
-        infra_reqs = [r for r in requirements if r.get("category") == "Infrastructure" or r.get("requirement_type") == "TECHNICAL"]
+        infra_reqs = [r for r in requirements if r.get("category") in ["Technical", "Infrastructure"] or r.get("requirement_type") == "TECHNICAL"]
         int_reqs = [r for r in requirements if r.get("category") == "Integration" or r.get("requirement_type") == "INTEGRATION"]
         data_reqs = [r for r in requirements if r.get("category") == "Data / Migration" or r.get("requirement_type") == "DATA"]
         timeline_reqs = [r for r in requirements if r.get("category") == "Timeline" or r.get("requirement_type") == "TIMELINE"]
@@ -49,10 +49,25 @@ class DeliveryEstimator:
         integration_complexity = "High" if int_count > 30 else ("Medium" if int_count > 10 else "Low")
         security_effort = "High" if sec_count > 50 else ("Medium" if sec_count > 20 else "Low")
         
+        # Quantitative effort calculation
+        base_hours_per_req = 12 if total_reqs < 100 else 8
+        calculated_dev_hours = max(3200, total_reqs * base_hours_per_req + (sec_count * 16) + (data_count * 24))
+        person_months = round(calculated_dev_hours / 160, 1)
+
         delivery_feasibility = {
             "requested_deadline": "Derived from RFP specifications",
             "estimated_delivery_range": "20–24 weeks (5–6 months)",
             "overall_pressure": delivery_pressure,
+            "total_estimated_hours": calculated_dev_hours,
+            "total_person_months": person_months,
+            "effort_breakdown_by_phase": {
+                "M-01 Architecture Baseline & Discovery": f"{round(calculated_dev_hours * 0.10)} hours",
+                "M-02 Cloud Foundation & Security Hardening": f"{round(calculated_dev_hours * 0.14)} hours",
+                "M-03 Core Platform & API Gateway Engineering": f"{round(calculated_dev_hours * 0.38)} hours",
+                "M-04 Legacy Data Migration & Integration": f"{round(calculated_dev_hours * 0.18)} hours",
+                "M-05 Security Audit, VAPT & UAT": f"{round(calculated_dev_hours * 0.12)} hours",
+                "M-06 Production Cutover & Hypercare": f"{round(calculated_dev_hours * 0.08)} hours"
+            },
             "dependency_risk": "Moderate (dependent on timely client interface access and credential provisioning)",
             "migration_complexity": migration_complexity,
             "integration_complexity": integration_complexity,
@@ -88,7 +103,7 @@ class DeliveryEstimator:
                 "suggested_count": 1,
                 "delivery_phase": "Weeks 1–24 (Full Lifecycle)",
                 "responsibilities": "Architectural governance, Zero Trust baseline, high availability design, and client technical steering.",
-                "reason": "Oversees architecture alignment across 700+ extracted requirements.",
+                "reason": "Oversees architecture alignment across extracted requirements.",
                 "requirements_driving_need": [r["id"] for r in infra_reqs[:4]]
             },
             {
@@ -149,7 +164,7 @@ class DeliveryEstimator:
             }
         ]
 
-        # Milestone roadmap
+        # Milestone roadmap with explicit dependency graph
         milestones = [
             {
                 "milestone_id": "M-01",
@@ -158,6 +173,7 @@ class DeliveryEstimator:
                 "description": "Finalize Architectural Design Document (ADD), agree on interface schemas, and sign off security boundary.",
                 "requirements_addressed": [r["id"] for r in requirements[:10]],
                 "dependencies": ["Client kickoff and designated stakeholder alignment"],
+                "depends_on": [],
                 "architecture_components": ["COMP-SEC-01", "COMP-INFRA-01"],
                 "risks": ["Scope ambiguity during discovery"],
                 "assumptions": ["ASM-001", "ASM-002"]
@@ -169,6 +185,7 @@ class DeliveryEstimator:
                 "description": "Deploy multi-AZ VPC infrastructure, configure Keycloak IAM with mandatory MFA, and establish private subnets.",
                 "requirements_addressed": [r["id"] for r in sec_reqs[:8]],
                 "dependencies": ["Cloud hosting accounts provisioned in India data center"],
+                "depends_on": ["M-01"],
                 "architecture_components": ["COMP-SEC-01", "COMP-INFRA-01"],
                 "risks": ["Network connectivity delays"],
                 "assumptions": ["ASM-002"]
@@ -180,6 +197,7 @@ class DeliveryEstimator:
                 "description": "Construct core business application microservices, deploy API gateway with rate-limiting, and configure audit logging.",
                 "requirements_addressed": [r["id"] for r in requirements[20:35]],
                 "dependencies": ["Security foundation sign-off"],
+                "depends_on": ["M-02"],
                 "architecture_components": ["COMP-CORE-01", "COMP-INT-01", "COMP-OBS-01"],
                 "risks": ["Integration contract changes"],
                 "assumptions": ["ASM-001", "ASM-004"]
@@ -191,6 +209,7 @@ class DeliveryEstimator:
                 "description": "Execute dry-run migration of historical datasets, validate relational schemas, and test external system connectors.",
                 "requirements_addressed": [r["id"] for r in data_reqs[:8]],
                 "dependencies": ["Sample legacy export files provided by client"],
+                "depends_on": ["M-03"],
                 "architecture_components": ["COMP-DATA-01", "COMP-INT-01"],
                 "risks": ["Legacy data schema anomalies"],
                 "assumptions": ["ASM-003"]
@@ -202,6 +221,7 @@ class DeliveryEstimator:
                 "description": "Perform independent VAPT security audit, execute load benchmarking under simulated peak volume, and conduct business UAT.",
                 "requirements_addressed": [r["id"] for r in sec_reqs[8:16]],
                 "dependencies": ["Feature freeze on Sprint 8 release"],
+                "depends_on": ["M-03", "M-04"],
                 "architecture_components": ["COMP-SEC-01", "COMP-OBS-01"],
                 "risks": ["VAPT remediation turnarounds"],
                 "assumptions": ["ASM-004"]
@@ -213,6 +233,7 @@ class DeliveryEstimator:
                 "description": "Execute final production delta migration, complete DNS traffic cutover, and provide 30-day dedicated hypercare support.",
                 "requirements_addressed": [r["id"] for r in requirements[40:50]],
                 "dependencies": ["Formal UAT sign-off and production authorization"],
+                "depends_on": ["M-05"],
                 "architecture_components": ["COMP-INFRA-01", "COMP-CORE-01", "COMP-DATA-01"],
                 "risks": ["Cutover rollback triggers"],
                 "assumptions": ["ASM-004"]

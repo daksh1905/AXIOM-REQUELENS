@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { fetchProjects } from "@/lib/api";
+import { fetchProjects, compareProjects, uploadPastProposal } from "@/lib/api";
 import { UploadModal } from "@/components/UploadModal";
 import { TransitionLink } from "@/context/TransitionContext";
 import {
@@ -22,7 +22,12 @@ import {
   Check,
   Upload,
   BarChart3,
-  Cpu
+  Cpu,
+  GitCompare,
+  BookOpen,
+  X,
+  AlertTriangle,
+  LogIn
 } from "lucide-react";
 
 interface ProjectSummary {
@@ -56,6 +61,45 @@ export default function ProjectsDirectoryPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  // Compare Projects State
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [compareP1, setCompareP1] = useState<string>("");
+  const [compareP2, setCompareP2] = useState<string>("");
+  const [compareResult, setCompareResult] = useState<any>(null);
+  const [isComparing, setIsComparing] = useState(false);
+
+  // Past Proposal State
+  const [isPastModalOpen, setIsPastModalOpen] = useState(false);
+  const [pastFile, setPastFile] = useState<File | null>(null);
+  const [isUploadingPast, setIsUploadingPast] = useState(false);
+  const [pastUploadResult, setPastUploadResult] = useState<any>(null);
+
+  const handleRunCompare = async () => {
+    if (!compareP1 || !compareP2) return;
+    try {
+      setIsComparing(true);
+      const res = await compareProjects(compareP1, compareP2);
+      setCompareResult(res);
+    } catch (err: any) {
+      alert("Failed to compare projects: " + (err?.message || "Unknown error"));
+    } finally {
+      setIsComparing(false);
+    }
+  };
+
+  const handleUploadPastProposal = async () => {
+    if (!pastFile) return;
+    try {
+      setIsUploadingPast(true);
+      const res = await uploadPastProposal(pastFile);
+      setPastUploadResult(res);
+    } catch (err: any) {
+      alert("Failed to index past proposal: " + (err?.message || "Unknown error"));
+    } finally {
+      setIsUploadingPast(false);
+    }
+  };
 
   const loadProjects = async () => {
     setLoading(true);
@@ -165,11 +209,37 @@ export default function ProjectsDirectoryPage() {
           {/* Actions */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setIsUploadOpen(true)}
+              onClick={() => {
+                if (projects.length >= 2) {
+                  setCompareP1(projects[0].id);
+                  setCompareP2(projects[1].id);
+                } else if (projects.length === 1) {
+                  setCompareP1(projects[0].id);
+                  setCompareP2("demo-rfp-001");
+                }
+                setIsCompareOpen(true);
+              }}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-mono font-semibold tracking-wider text-[#b3a78f] hover:text-[#faf8f5] bg-[#141310] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
+              title="Compare two RFP projects or revision versions (Checklist #17)"
+            >
+              <GitCompare className="w-3.5 h-3.5 text-[#cda76e]" />
+              <span>Compare Versions</span>
+            </button>
+
+            <button
+              onClick={() => setIsPastModalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-mono font-semibold tracking-wider text-[#b3a78f] hover:text-[#faf8f5] bg-[#141310] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
+              title="Upload past winning proposal to index format and reuse styles (Checklist #18)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#cda76e]" />
+              <span>Past Proposals</span>
+            </button>
+
+            <button
               className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] via-[#cda76e] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full shadow-md shadow-[#b08d4b]/15 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5 text-[#080807]" />
-              <span>Analyze New RFP</span>
+              <LogIn className="w-3.5 h-3.5 text-[#080807]" />
+              <span>Sign In</span>
             </button>
           </div>
         </div>
@@ -468,6 +538,241 @@ export default function ProjectsDirectoryPage() {
 
       {/* Upload RFP Modal */}
       {isUploadOpen && <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />}
+
+      {/* Compare Projects / Versions Modal (Checklist #17) */}
+      {isCompareOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f0e0c] border border-[#2b2720] rounded-2xl max-w-3xl w-full p-6 space-y-5 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#23211b]">
+              <div className="flex items-center gap-2">
+                <GitCompare className="w-5 h-5 text-[#cda76e]" />
+                <h3 className="text-base font-editorial font-bold text-[#faf8f5]">
+                  Document Comparison &amp; Version Diff
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsCompareOpen(false);
+                  setCompareResult(null);
+                }}
+                className="text-[#8a725c] hover:text-[#faf8f5] p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#8a725c] font-mono leading-relaxed">
+              Checklist Item #17: Compare two RFPs or revisions, detect requirement scope shifts, highlight new risks, and audit differences.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-mono text-[#b3a78f] uppercase tracking-wider mb-1">
+                  Base Project / Version A
+                </label>
+                <select
+                  value={compareP1}
+                  onChange={(e) => setCompareP1(e.target.value)}
+                  className="w-full bg-[#0a0a08] border border-[#2b2720] rounded-xl p-2.5 text-xs text-[#faf8f5] focus:outline-none focus:border-[#cda76e]"
+                >
+                  <option value="">Select Base Project...</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono text-[#b3a78f] uppercase tracking-wider mb-1">
+                  Compared Project / Revision B
+                </label>
+                <select
+                  value={compareP2}
+                  onChange={(e) => setCompareP2(e.target.value)}
+                  className="w-full bg-[#0a0a08] border border-[#2b2720] rounded-xl p-2.5 text-xs text-[#faf8f5] focus:outline-none focus:border-[#cda76e]"
+                >
+                  <option value="">Select Compared Project...</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                disabled={isComparing || !compareP1 || !compareP2}
+                onClick={handleRunCompare}
+                className="px-4 py-2 text-xs font-mono font-semibold text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-xl shadow transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isComparing ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Auditing Differences...
+                  </>
+                ) : (
+                  <>
+                    <GitCompare className="w-3.5 h-3.5" />
+                    Run Version Diff
+                  </>
+                )}
+              </button>
+            </div>
+
+            {compareResult && (
+              <div className="pt-4 border-t border-[#23211b] space-y-4">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#141310] border border-[#2b2720]">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono text-[#8a725c] block">Comparison Verdict</span>
+                    <h4 className="text-sm font-bold text-[#faf8f5]">
+                      {compareResult.comparison_summary || "Audit complete"}
+                    </h4>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-mono text-[#8a725c] block">Similarity Index</span>
+                    <span className="font-mono text-base font-bold text-[#cda76e]">
+                      {compareResult.similarity_score !== undefined ? `${compareResult.similarity_score}%` : "Analyzed"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                  <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+                    <span className="text-[10px] font-mono uppercase text-emerald-400 block">Added Requirements</span>
+                    <span className="font-mono text-lg font-bold text-emerald-300">
+                      {compareResult.added_requirements?.length || 0}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-red-950/20 border border-red-500/30">
+                    <span className="text-[10px] font-mono uppercase text-red-400 block">Removed Requirements</span>
+                    <span className="font-mono text-lg font-bold text-red-300">
+                      {compareResult.removed_requirements?.length || 0}
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30">
+                    <span className="text-[10px] font-mono uppercase text-amber-400 block">New Risks Found</span>
+                    <span className="font-mono text-lg font-bold text-amber-300">
+                      {compareResult.new_risks?.length || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {compareResult.added_requirements && compareResult.added_requirements.length > 0 && (
+                  <div className="p-3.5 rounded-xl bg-[#0a0a08] border border-[#23211b] text-xs space-y-2">
+                    <span className="font-mono font-bold text-emerald-400 uppercase text-[10px] block">
+                      Newly Introduced Scope Items:
+                    </span>
+                    {compareResult.added_requirements.map((req: any, i: number) => (
+                      <div key={i} className="text-slate-300 font-mono text-[11px] flex items-start gap-2">
+                        <span className="text-emerald-400 font-bold">+</span>
+                        <span>{req.text || req.id || JSON.stringify(req)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Past Proposal Learning Modal (Checklist #18) */}
+      {isPastModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0f0e0c] border border-[#2b2720] rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#23211b]">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#cda76e]" />
+                <h3 className="text-base font-editorial font-bold text-[#faf8f5]">
+                  Past Proposal Learning Engine
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setIsPastModalOpen(false);
+                  setPastUploadResult(null);
+                  setPastFile(null);
+                }}
+                className="text-[#8a725c] hover:text-[#faf8f5] p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#8a725c] font-mono leading-relaxed">
+              Checklist Item #18: Upload historical winning proposals (.pdf or .docx). The engine parses terminology, structural formatting, and reusable capability narratives.
+            </p>
+
+            <div className="space-y-3">
+              <label className="block text-[11px] font-mono text-[#b3a78f] uppercase tracking-wider">
+                Select Past Proposal Document
+              </label>
+              <input
+                type="file"
+                accept=".pdf,.docx,.doc"
+                onChange={(e) => setPastFile(e.target.files?.[0] || null)}
+                className="w-full bg-[#0a0a08] border border-[#2b2720] rounded-xl p-3 text-xs text-[#faf8f5] file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#1c1914] file:text-[#cda76e] cursor-pointer"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-[#23211b]">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPastModalOpen(false);
+                  setPastUploadResult(null);
+                  setPastFile(null);
+                }}
+                className="px-4 py-2 text-xs font-mono font-medium text-[#b3a78f] hover:text-[#faf8f5] transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isUploadingPast || !pastFile}
+                onClick={handleUploadPastProposal}
+                className="px-4 py-2 text-xs font-mono font-semibold text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-xl shadow transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isUploadingPast ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Indexing Proposal...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload &amp; Index
+                  </>
+                )}
+              </button>
+            </div>
+
+            {pastUploadResult && (
+              <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Proposal Indexed Successfully</span>
+                </div>
+                <p className="text-slate-300 font-mono text-[11px]">{pastUploadResult.message}</p>
+                {pastUploadResult.detected_sections && (
+                  <div className="pt-2 border-t border-[#23211b] text-[10px] text-[#8a725c] font-mono">
+                    <span className="block font-bold text-[#faf8f5] mb-1">Reusable Sections Detected:</span>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {pastUploadResult.detected_sections.map((sec: string, idx: number) => (
+                        <li key={idx}>{sec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class Requirement(BaseModel):
     id: str
     text: str
-    category: str = "Functional"
+    category: str = "Functional"  # Functional, Technical, Business, Budget, Timeline, Security, Compliance, Performance, Other
     subcategory: Optional[str] = None
     priority: str = "Mandatory"  # Mandatory, Preferred, Optional, Unknown
     confidence: float = 0.95
@@ -12,6 +12,10 @@ class Requirement(BaseModel):
     section: str = "General"
     source_text: str
     status: str = "Covered"  # Covered, Partially Covered, Uncovered, Needs Review
+    information_classification: str = "Explicit"  # Explicit, Inferred, Assumption, Missing
+    is_verified: bool = False
+    reviewed_by_human: bool = False
+    reviewer_notes: Optional[str] = None
     proposal_sections: List[str] = Field(default_factory=list)
     architecture_components: List[str] = Field(default_factory=list)
     related_requirements: List[str] = Field(default_factory=list)
@@ -33,6 +37,7 @@ class Risk(BaseModel):
     recommendation: str
     confidence: float = 0.90
     human_review_required: bool = True
+    status: str = "Open"  # Open, Mitigated, Accepted Risk
 
 class ContradictionEvidence(BaseModel):
     req_id: str
@@ -59,6 +64,14 @@ class Ambiguity(BaseModel):
     severity: str = "Medium"
     suggested_clarification: str
 
+class MissingInformationItem(BaseModel):
+    id: str
+    category: str  # Budget, Timeline, User Capacity, Technical Specifications, Disaster Recovery, Other
+    missing_detail: str
+    why_it_matters: str
+    client_clarification_question: str
+    status: str = "Open"
+
 class ClarificationQuestion(BaseModel):
     id: str
     question: str
@@ -74,7 +87,7 @@ class Assumption(BaseModel):
     impact: str
     source_context: str
     related_requirements: List[str] = Field(default_factory=list)
-    status: str = "Open"  # Open, Confirmed, Rejected
+    status: str = "Open"  # Open, Confirmed, Rejected, Modified
 
 class EvaluationCriteriaItem(BaseModel):
     category: str
@@ -122,6 +135,7 @@ class Milestone(BaseModel):
     description: str
     deliverables: List[str] = Field(default_factory=list)
     requirement_ids: List[str] = Field(default_factory=list)
+    depends_on: List[str] = Field(default_factory=list)
 
 class TeamRoleEstimate(BaseModel):
     role: str
@@ -133,6 +147,8 @@ class DeliveryFeasibility(BaseModel):
     requested_deadline: str
     estimated_delivery_range: str
     risk_level: str
+    total_estimated_hours: int = 4800
+    total_person_months: int = 30
     disclaimer: str = "AI-assisted preliminary estimate — requires delivery-team validation."
     primary_drivers: List[str] = Field(default_factory=list)
     scenarios: List[Dict[str, str]] = Field(default_factory=list)
@@ -140,7 +156,7 @@ class DeliveryFeasibility(BaseModel):
 class ClaimAudit(BaseModel):
     id: str
     claim_text: str
-    classification: str  # GROUNDED_REQUIREMENT, PROPOSED_DESIGN, ASSUMPTION, UNSUPPORTED_CLAIM
+    classification: str  # GROUNDED_REQUIREMENT, PROPOSED_DESIGN, ASSUMPTION, UNSUPPORTED_CLAIM, RFP_FACT, NEEDS_REVIEW
     source_page: Optional[int] = None
     source_section: Optional[str] = None
     confidence: float = 0.90
@@ -203,10 +219,13 @@ class DocumentHeatmapRange(BaseModel):
 class VersionDiff(BaseModel):
     version_old: str
     version_new: str
-    added_requirements: List[Requirement] = Field(default_factory=list)
-    removed_requirements: List[str] = Field(default_factory=list)
+    project_name_old: str = ""
+    project_name_new: str = ""
+    added_requirements: List[Dict[str, Any]] = Field(default_factory=list)
+    removed_requirements: List[Dict[str, Any]] = Field(default_factory=list)
     modified_requirements: List[Dict[str, Any]] = Field(default_factory=list)
-    impact_analysis: Dict[str, Any] = Field(default_factory=dict)
+    readiness_delta: Dict[str, Any] = Field(default_factory=dict)
+    summary: str = ""
 
 class Project(BaseModel):
     id: str
@@ -220,3 +239,38 @@ class Project(BaseModel):
     is_demo: bool = False
     readiness: Optional[ProposalReadiness] = None
 
+# API Request/Response Schemas
+class RequirementUpdateRequest(BaseModel):
+    text: Optional[str] = None
+    category: Optional[str] = None
+    priority: Optional[str] = None
+    information_classification: Optional[str] = None
+    status: Optional[str] = None
+    is_verified: Optional[bool] = None
+    reviewer_notes: Optional[str] = None
+
+class RiskUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    severity: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    recommendation: Optional[str] = None
+    human_review_required: Optional[bool] = None
+    status: Optional[str] = None
+
+class AssumptionUpdateRequest(BaseModel):
+    status: Optional[str] = None  # Open, Confirmed, Rejected, Modified
+    assumption: Optional[str] = None
+    reason: Optional[str] = None
+    impact: Optional[str] = None
+
+class ProposalSectionUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+class RegenerateSectionRequest(BaseModel):
+    custom_instructions: Optional[str] = None
+
+class CompareProjectsRequest(BaseModel):
+    project_id_1: str
+    project_id_2: str

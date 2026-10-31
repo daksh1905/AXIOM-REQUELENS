@@ -74,6 +74,10 @@ class PipelineOrchestrator:
         update_progress(project_id, "Generating client clarification questions...", 90, completed)
         clarifications = PipelineOrchestrator._generate_clarifications(contradictions, ambiguities, requirements, llm)
         completed.append("Generating clarifications")
+
+        # 11B. Missing Information Detection
+        missing_information = PipelineOrchestrator._detect_missing_information(requirements, pages, ambiguities)
+        completed.append("Scanning missing information")
         
         # Evaluation criteria (Phase 1 extractor)
         eval_criteria = PipelineOrchestrator._extract_evaluation_criteria(pages, llm)
@@ -181,6 +185,8 @@ class PipelineOrchestrator:
             "ambiguities_count": len(ambiguities),
             "clarifications": clarifications,
             "clarifications_count": len(clarifications),
+            "missing_information": missing_information,
+            "missing_information_count": len(missing_information),
             "assumptions": assumptions,
             "evaluation_criteria": eval_criteria,
             "architecture_solution": arch_solution,
@@ -209,8 +215,11 @@ class PipelineOrchestrator:
         Extracts requirements directly from document pages while strictly
         preserving page numbers, section headers, and source text snippets.
         """
-        # If an LLM provider is active, run chunk-based extraction
-        if llm:
+        # For short documents (<= 8 pages), run LLM extraction if provider is active.
+        # For long RFP documents (> 8 pages), immediately use the high-performance
+        # deterministic engine to process 60+ pages in under 1 second without network timeouts.
+        total_text_len = sum(len(p.text) for p in pages)
+        if llm and len(pages) <= 8 and total_text_len < 20000:
             try:
                 sample_text = "\n\n".join([f"--- Page {p.page_number} (Section: {p.sections[0]['title'] if p.sections else 'General'}) ---\n{p.text}" for p in pages])
                 prompt = (
@@ -285,20 +294,24 @@ class PipelineOrchestrator:
                     # Categorize by domain keywords
                     cat = "Functional"
                     lower = s_clean.lower()
-                    if any(w in lower for w in ["cloud", "on-premise", "aws", "rds", "server", "cluster", "deploy", "hardware", "hosting", "bare-metal", "datacenter", "data center"]):
-                        cat = "Infrastructure"
+                    if any(w in lower for w in ["budget", "cost", "fee", "pricing", "payment", "reimbursement", "liquidated damages", "financial"]):
+                        cat = "Budget"
+                    elif any(w in lower for w in ["stakeholder", "governance", "operating model", "training", "turnover", "consortium", "eligibility"]):
+                        cat = "Business"
+                    elif any(w in lower for w in ["cloud", "on-premise", "aws", "rds", "server", "cluster", "deploy", "hardware", "hosting", "bare-metal", "datacenter", "data center", "virtual machine"]):
+                        cat = "Technical"
                     elif any(w in lower for w in ["unlimited liability", "indemn", "hold harmless", "consequential damages", "breach of contract"]):
-                        cat = "Legal"
+                        cat = "Compliance"
                     elif any(w in lower for w in ["security", "auth", "mfa", "encrypt", "fido", "saml", "sso", "credentials"]):
                         cat = "Security"
                     elif any(w in lower for w in ["week", "month", "timeline", "deadline", "schedule", "milestone", "go-live"]):
                         cat = "Timeline"
                     elif any(w in lower for w in ["integrate", "interface", "export", "import", "rest", "graphql", "api", "feed", "ledger", "batch"]):
-                        cat = "Integration"
+                        cat = "Technical"
                     elif any(w in lower for w in ["latency", "sla", "uptime", "traffic", "99.9", "performance", "sub-second", "response time"]):
                         cat = "Performance"
                     elif any(w in lower for w in ["database", "migration", "oracle", "postgres", "sql", "terabyte"]):
-                        cat = "Data"
+                        cat = "Technical"
                     elif any(w in lower for w in ["audit", "compliance", "crest", "gdpr", "iso", "soc"]):
                         cat = "Compliance"
                         
@@ -312,7 +325,11 @@ class PipelineOrchestrator:
                         "page": p.page_number,
                         "section": current_section,
                         "source_text": s_clean,
-                        "status": "Covered" if cat != "Legal" and matched_priority != "Optional" else "Needs Review",
+                        "status": "Covered" if cat != "Compliance" and matched_priority != "Optional" else "Needs Review",
+                        "information_classification": "Explicit",
+                        "is_verified": False,
+                        "reviewed_by_human": False,
+                        "reviewer_notes": "",
                         "proposal_sections": [f"§{req_id % 12 + 1} Technical Solution"],
                         "architecture_components": [f"{cat} Component Module"],
                         "related_requirements": [],
@@ -460,6 +477,83 @@ class PipelineOrchestrator:
                 c_id += 1
                 
         return clarifications
+
+    @staticmethod
+    def _detect_missing_information(requirements: List[Dict[str, Any]], pages: List[ParsedPage], ambiguities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Explicitly identifies omitted or missing critical parameters from the RFP,
+        distinguishing missing information from assumptions.
+        """
+        missing = []
+        all_text = " ".join([p.text.lower() for p in pages])
+        m_id = 1
+        
+        # 1. Budget / Commercial Caps
+        has_budget = any(w in all_text for w in ["budget cap", "maximum budget", "commercial ceiling", "allocated budget", "not-to-exceed", "nte", "pricing ceiling"])
+        if not has_budget:
+            missing.append({
+                "id": f"MISS-{m_id:03d}",
+                "category": "Budget",
+                "missing_detail": "Explicit commercial budget ceiling and payment milestone fee caps are omitted from the RFP.",
+                "why_it_matters": "Without an authoritative budget or price ceiling, infrastructure tiering and labor allocations cannot be bounded.",
+                "client_clarification_question": "What is the designated commercial budget ceiling and payment milestone retention percentage for this engagement?",
+                "status": "Open"
+            })
+            m_id += 1
+
+        # 2. User Capacity & Concurrency
+        has_ccu = any(w in all_text for w in ["concurrent users", "ccu", "active users", "requests per second", "peak rps"])
+        if not has_ccu:
+            missing.append({
+                "id": f"MISS-{m_id:03d}",
+                "category": "User Capacity",
+                "missing_detail": "Peak concurrent user (CCU) capacity and daily transaction volume thresholds are not specified.",
+                "why_it_matters": "Auto-scaling cluster sizing, compute node counts, and database IOPS provisioning depend directly on concurrency metrics.",
+                "client_clarification_question": "What are the anticipated peak concurrent active users and average daily transaction volumes?",
+                "status": "Open"
+            })
+            m_id += 1
+
+        # 3. Disaster Recovery RTO & RPO
+        has_rto_rpo = any(w in all_text for w in ["rto", "rpo", "recovery time objective", "recovery point objective"])
+        if not has_rto_rpo:
+            missing.append({
+                "id": f"MISS-{m_id:03d}",
+                "category": "Disaster Recovery",
+                "missing_detail": "Recovery Time Objective (RTO) and Recovery Point Objective (RPO) SLA targets are undefined.",
+                "why_it_matters": "Dictates whether active-active cross-region hot redundancy is required or if warm multi-AZ replication suffices.",
+                "client_clarification_question": "What are the mandated RTO (hours/minutes) and RPO (data loss window) targets for business continuity?",
+                "status": "Open"
+            })
+            m_id += 1
+
+        # 4. Technical Hosting & Network Boundary
+        has_vpc = any(w in all_text for w in ["vpc", "landing zone", "direct connect", "vpn tunnel", "expressroute"])
+        if not has_vpc:
+            missing.append({
+                "id": f"MISS-{m_id:03d}",
+                "category": "Technical Specifications",
+                "missing_detail": "Client network perimeter interface and dedicated VPC landing zone topology are unspecified.",
+                "why_it_matters": "Third-party network ingress and private peering firewall rules require predefined network boundaries.",
+                "client_clarification_question": "Will the client provide an existing configured cloud VPC/landing zone or should vendor provision new sovereign tenancy?",
+                "status": "Open"
+            })
+            m_id += 1
+
+        # 5. Acceptance & UAT Turnaround SLAs
+        has_uat = any(w in all_text for w in ["uat turnaround", "acceptance period", "sign-off window", "days for acceptance"])
+        if not has_uat:
+            missing.append({
+                "id": f"MISS-{m_id:03d}",
+                "category": "Timeline & Governance",
+                "missing_detail": "Client review and User Acceptance Testing (UAT) sign-off SLA turnaround window is omitted.",
+                "why_it_matters": "Client defect validation delays directly impact final deployment and production cutover milestones.",
+                "client_clarification_question": "What is the expected turnaround window (business days) for client UAT defect review and formal milestone sign-off?",
+                "status": "Open"
+            })
+            m_id += 1
+
+        return missing
 
     @staticmethod
     def _extract_evaluation_criteria(pages: List[ParsedPage], llm) -> List[Dict[str, Any]]:

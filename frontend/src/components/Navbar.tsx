@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, FolderGit2 } from "lucide-react";
+import { ArrowRight, FolderGit2, LogIn } from "lucide-react";
 import { TransitionLink } from "@/context/TransitionContext";
 
 export function Navbar({ onOpenUpload }: { onOpenUpload?: () => void }) {
@@ -69,11 +69,10 @@ export function Navbar({ onOpenUpload }: { onOpenUpload?: () => void }) {
           </TransitionLink>
 
           <button
-            onClick={onOpenUpload}
             className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] via-[#cda76e] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full shadow-md shadow-[#b08d4b]/15 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
-            <span>Analyze RFP</span>
-            <ArrowRight className="w-3 h-3 text-[#080807]" />
+            <LogIn className="w-3.5 h-3.5 text-[#080807]" />
+            <span>Sign In</span>
           </button>
         </div>
       </div>

@@ -25,17 +25,35 @@ class SolutionArchitect:
         """
         # Group requirements by category and type
         sec_reqs = [r for r in requirements if r.get("category") == "Security" or r.get("requirement_type") == "SECURITY"]
-        infra_reqs = [r for r in requirements if r.get("category") == "Infrastructure" or r.get("requirement_type") == "TECHNICAL"]
+        infra_reqs = [r for r in requirements if r.get("category") in ["Technical", "Infrastructure"] or r.get("requirement_type") == "TECHNICAL"]
         data_reqs = [r for r in requirements if r.get("category") == "Data / Migration" or r.get("requirement_type") == "DATA"]
         int_reqs = [r for r in requirements if r.get("category") == "Integration" or r.get("requirement_type") == "INTEGRATION"]
-        perf_reqs = [r for r in requirements if r.get("category") == "Performance" or r.get("requirement_type") == "NON_FUNCTIONAL"]
+        perf_reqs = [r for r in requirements if r.get("category") == "Performance" or r.get("requirement_type") == "PERFORMANCE"]
         comp_reqs = [r for r in requirements if r.get("category") == "Compliance" or r.get("requirement_type") == "COMPLIANCE"]
         func_reqs = [r for r in requirements if r.get("category") == "Functional" or r.get("requirement_type") == "FUNCTIONAL"]
-        legal_reqs = [r for r in requirements if r.get("category") == "Legal & Commercial" or r.get("requirement_type") in ["LEGAL", "COMMERCIAL"]]
+        biz_reqs = [r for r in requirements if r.get("category") == "Business" or r.get("requirement_type") == "BUSINESS"]
+        budget_reqs = [r for r in requirements if r.get("category") == "Budget" or r.get("requirement_type") == "BUDGET"]
 
         components = []
 
-        # 1. Identity & Zero-Trust Access Controller
+        # 1. Frontend Experience & Responsive Portal Tier
+        func_req_ids = [r["id"] for r in func_reqs[:12]]
+        components.append({
+            "component_id": "COMP-FE-01",
+            "name": "Enterprise Web Portal & Operator Console",
+            "category": "Frontend",
+            "purpose": "Delivers a responsive, accessible (WCAG 2.1 AA) operator dashboard, reporting widgets, and administrative consoles.",
+            "description": "Server-side rendered modern Web UI built with Next.js and TailwindCSS, utilizing reactive websockets for live dashboard feeds.",
+            "recommended_technology_or_category": "Next.js 14 / React with TailwindCSS & TypeScript",
+            "justification": f"Fulfills client functional usability and portal interaction specifications across {len(func_req_ids)} operational requirements.",
+            "related_requirement_ids": func_req_ids,
+            "related_risk_ids": [],
+            "assumptions": ["End users access the platform using modern Chromium/WebKit browsers."],
+            "confidence": 0.96,
+            "origin": "RECLENS_PROPOSED"
+        })
+
+        # 2. Identity & Zero-Trust Access Controller
         sec_req_ids = [r["id"] for r in sec_reqs[:12]]
         has_mfa = any("mfa" in r.get("text", "").lower() or "multi-factor" in r.get("text", "").lower() for r in sec_reqs)
         has_sso = any("sso" in r.get("text", "").lower() or "saml" in r.get("text", "").lower() for r in sec_reqs)
@@ -56,7 +74,7 @@ class SolutionArchitect:
             "origin": "RFP_REQUIRED" if has_mfa or has_sso else "RECLENS_PROPOSED"
         })
 
-        # 2. Resilient Cloud Infrastructure & Compute Cluster
+        # 3. Resilient Cloud Infrastructure & Compute Cluster
         infra_req_ids = [r["id"] for r in infra_reqs[:12]]
         is_cloud_mandated = any("cloud" in r.get("text", "").lower() or "meity" in r.get("text", "").lower() for r in infra_reqs)
         infra_risks = [rk["id"] for rk in risks if rk.get("category") in ["Infrastructure", "Timeline"]]
@@ -76,7 +94,7 @@ class SolutionArchitect:
             "origin": "RFP_REQUIRED" if is_cloud_mandated else "RECLENS_PROPOSED"
         })
 
-        # 3. Enterprise Integration Gateway
+        # 4. Enterprise Integration Gateway
         int_req_ids = [r["id"] for r in int_reqs[:12]]
         int_risks = [rk["id"] for rk in risks if rk.get("category") == "Integration"]
 
@@ -86,7 +104,7 @@ class SolutionArchitect:
             "category": "Integration",
             "purpose": "Manages rate-limited, authenticated API communication between external client services and core application subsystems.",
             "description": "API Gateway supporting REST, OpenAPI specifications, HMAC request signing, and mutual TLS encryption.",
-            "recommended_technology_or_category": "Enterprise API Gateway / Reverse Proxy",
+            "recommended_technology_or_category": "Kong Gateway Enterprise / Reverse Proxy",
             "justification": f"Provides secure mediation for {len(int_req_ids)} integration requirements and shields internal microservices.",
             "related_requirement_ids": int_req_ids,
             "related_risk_ids": int_risks,
@@ -95,10 +113,8 @@ class SolutionArchitect:
             "origin": "RECLENS_PROPOSED"
         })
 
-        # 4. Encrypted Relational Persistence & Migration Engine
+        # 5. Encrypted Relational Persistence & Migration Engine
         data_req_ids = [r["id"] for r in data_reqs[:12]]
-        has_export = any("export" in r.get("text", "").lower() or "portab" in r.get("text", "").lower() for r in data_reqs)
-
         components.append({
             "component_id": "COMP-DATA-01",
             "name": "Encrypted Relational Persistence & Migration Engine",
@@ -114,16 +130,14 @@ class SolutionArchitect:
             "origin": "RECLENS_PROPOSED"
         })
 
-        # 5. Core Business Application Services
-        func_req_ids = [r["id"] for r in func_reqs[:15]]
-
+        # 6. Core Business Application Services
         components.append({
             "component_id": "COMP-CORE-01",
             "name": "Core Business Application Services",
             "category": "Functional",
             "purpose": "Executes domain business logic, workflow automation, approval chains, and client operational workflows.",
             "description": "Decoupled microservice architecture utilizing event-driven inter-service messaging for loose coupling and scalability.",
-            "recommended_technology_or_category": "Modular Microservices Architecture",
+            "recommended_technology_or_category": "FastAPI (Python 3.12) Async Microservices",
             "justification": f"Implements core operational workflows addressing {len(func_req_ids)} client functional requirements.",
             "related_requirement_ids": func_req_ids,
             "related_risk_ids": [],
@@ -132,16 +146,15 @@ class SolutionArchitect:
             "origin": "RECLENS_PROPOSED"
         })
 
-        # 6. Observability, SIEM & Audit Subsystem
+        # 7. Observability, SIEM & Audit Subsystem
         comp_req_ids = [r["id"] for r in comp_reqs[:8]] + [r["id"] for r in perf_reqs[:8]]
-
         components.append({
             "component_id": "COMP-OBS-01",
             "name": "Observability, SIEM & Audit Subsystem",
             "category": "Compliance",
             "purpose": "Captures immutable audit logs, real-time performance telemetry, APM traces, and SLA violation alerts.",
             "description": "Centralized logging and metrics pipeline with write-once-read-many (WORM) storage for regulatory non-repudiation.",
-            "recommended_technology_or_category": "Centralized SIEM & Telemetry Engine",
+            "recommended_technology_or_category": "Centralized SIEM & Telemetry Engine (Prometheus & Grafana)",
             "justification": f"Delivers verifiable audit trails satisfying {len(comp_req_ids)} monitoring and compliance specifications.",
             "related_requirement_ids": comp_req_ids,
             "related_risk_ids": [],
@@ -161,9 +174,10 @@ class SolutionArchitect:
 
         # Data Flows between components
         data_flows = [
-            {"from_component": "Client Gateways / Users", "to_component": "COMP-SEC-01", "description": "User Authentication & MFA Challenge", "protocol": "HTTPS / TLS 1.3"},
-            {"from_component": "COMP-SEC-01", "to_component": "COMP-INT-01", "description": "Validated JWT Bearer Token Pass-through", "protocol": "Internal TLS"},
-            {"from_component": "COMP-INT-01", "to_component": "COMP-CORE-01", "description": "Rate-limited API Request Dispatch", "protocol": "gRPC / HTTPS"},
+            {"from_component": "Client Gateways / Users", "to_component": "COMP-FE-01", "description": "Interactive Web Traffic & API Ingress", "protocol": "HTTPS / TLS 1.3"},
+            {"from_component": "COMP-FE-01", "to_component": "COMP-SEC-01", "description": "User Authentication & MFA Challenge", "protocol": "OIDC / OAuth 2.0"},
+            {"from_component": "COMP-FE-01", "to_component": "COMP-INT-01", "description": "Authenticated Microservice Dispatch", "protocol": "HTTPS / Bearer JWT"},
+            {"from_component": "COMP-INT-01", "to_component": "COMP-CORE-01", "description": "Rate-limited API Request Execution", "protocol": "gRPC / Internal TLS"},
             {"from_component": "COMP-CORE-01", "to_component": "COMP-DATA-01", "description": "Encrypted Transactional Read/Write", "protocol": "TLS Encrypted SQL (Port 5432)"},
             {"from_component": "All Components", "to_component": "COMP-OBS-01", "description": "Structured Audit Logs & Health Metrics", "protocol": "Syslog-TLS / OTLP"}
         ]
@@ -175,21 +189,23 @@ class SolutionArchitect:
             "  classDef prop fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#f8fafc;\n"
             "  classDef sec fill:#1e1b4b,stroke:#06b6d4,stroke-width:2px,color:#f8fafc;\n\n"
             "  subgraph Edge [Client Entry & Perimeter]\n"
-            "    GW[\"Client Gateway & Users\"]:::rfp\n"
+            "    GW[\"Client Gateway & Browser Users\"]:::rfp\n"
+            "    FE[\"COMP-FE-01: Next.js Enterprise Portal\"]:::prop\n"
             "  end\n\n"
             "  subgraph SecurityTier [Zero-Trust Security]\n"
             "    SEC[\"COMP-SEC-01: Identity & Access Controller\"]:::sec\n"
             "  end\n\n"
             "  subgraph AppTier [Compute & Integration Tier]\n"
             "    INT[\"COMP-INT-01: Enterprise API Gateway\"]:::prop\n"
-            "    CORE[\"COMP-CORE-01: Core Application Services\"]:::prop\n"
+            "    CORE[\"COMP-CORE-01: FastAPI Microservice Core\"]:::prop\n"
             "  end\n\n"
             "  subgraph DataTier [Persistence & Audit Tier]\n"
-            "    DATA[(\"COMP-DATA-01: Relational Persistence Clustered\")]:::prop\n"
+            "    DATA[(\"COMP-DATA-01: Relational Clustered DB\")]:::prop\n"
             "    OBS[\"COMP-OBS-01: Observability & SIEM Engine\"]:::sec\n"
             "  end\n\n"
-            "  GW -->|TLS 1.3| SEC\n"
-            "  SEC -->|Bearer Token| INT\n"
+            "  GW -->|TLS 1.3| FE\n"
+            "  FE -->|OIDC / MFA| SEC\n"
+            "  FE -->|Bearer Token| INT\n"
             "  INT -->|gRPC| CORE\n"
             "  CORE -->|Encrypted SQL| DATA\n"
             "  CORE -.->|Audit Events| OBS\n"
@@ -214,8 +230,41 @@ class SolutionArchitect:
             ]
         }
 
-        # Technology Stack Recommendations
+        # Technology Stack Recommendations (Covering Programming Languages, Frameworks, DBs, Cloud, & SIEM)
         tech_stack = [
+            {
+                "technology": "Python 3.12 & TypeScript",
+                "category": "Programming Languages",
+                "purpose": "High-performance asynchronous backend services, AI data extraction, and type-safe frontend UI engineering.",
+                "why_selected": "Python provides native enterprise AI/data processing pipelines; TypeScript guarantees frontend type safety and zero runtime schema drift.",
+                "requirements_addressed": func_req_ids[:4],
+                "architecture_components": ["COMP-FE-01", "COMP-CORE-01"],
+                "alternatives_considered": ["Java / Spring", "C# / .NET"],
+                "origin": "RECLENS_PROPOSED",
+                "confidence": 0.98
+            },
+            {
+                "technology": "Next.js 14 / React with TailwindCSS",
+                "category": "Frontend Framework",
+                "purpose": "Server-side rendered enterprise dashboard, accessibility adherence (WCAG 2.1 AA), and high-performance UI state management.",
+                "why_selected": "Sub-second initial page rendering, automatic bundle splitting, and robust component modularity.",
+                "requirements_addressed": func_req_ids[:4],
+                "architecture_components": ["COMP-FE-01"],
+                "alternatives_considered": ["Angular 17", "Vue.js 3"],
+                "origin": "RECLENS_PROPOSED",
+                "confidence": 0.96
+            },
+            {
+                "technology": "FastAPI (Asynchronous Python)",
+                "category": "Backend Framework",
+                "purpose": "Microservice REST and WebSocket APIs, automatic OpenAPI documentation, and asynchronous I/O concurrency.",
+                "why_selected": "High throughput benchmarks matching Node.js/Go with native Pydantic schema validation.",
+                "requirements_addressed": func_req_ids[4:8],
+                "architecture_components": ["COMP-CORE-01"],
+                "alternatives_considered": ["Flask", "Django REST Framework"],
+                "origin": "RECLENS_PROPOSED",
+                "confidence": 0.95
+            },
             {
                 "technology": "Keycloak Enterprise IAM",
                 "category": "Security & Identity",
