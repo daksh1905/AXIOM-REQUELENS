@@ -2,63 +2,81 @@
 
 import React from "react";
 import Link from "next/link";
-import { ShieldCheck, Sparkles, FileText, ArrowRight, Layers, FolderGit2 } from "lucide-react";
+import { ArrowRight, FolderGit2 } from "lucide-react";
+import { TransitionLink } from "@/context/TransitionContext";
 
 export function Navbar({ onOpenUpload }: { onOpenUpload?: () => void }) {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-navy-950/80 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            <ShieldCheck className="w-5 h-5 text-white" />
+    <header className="sticky top-0 z-50 w-full border-b border-[#23211b]/80 bg-[#080807]/80 backdrop-blur-xl transition-all duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+        {/* Editorial Brand Wordmark */}
+        <TransitionLink href="/" className="flex items-center gap-3 group">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#cda76e] via-[#b08d4b] to-[#473924] p-[1px] flex items-center justify-center shadow-lg shadow-[#b08d4b]/10 group-hover:shadow-[#b08d4b]/20 transition-all">
+            <div className="w-full h-full rounded-full bg-[#0d0c0a] flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-[#cda76e] group-hover:scale-125 transition-transform" />
+            </div>
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-bold tracking-tight text-white font-mono">RECLENS</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+            <div className="flex items-center gap-2">
+              <span className="text-base sm:text-lg font-bold tracking-[0.2em] text-[#faf8f5] uppercase font-mono">
+                RECLENS
+              </span>
+              <span className="text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded bg-[#201d17] text-[#cda76e] border border-[#3d3628]">
                 v1.0
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 -mt-0.5">Read • Reason • Verify • Propose</p>
+            <p className="text-[9px] uppercase tracking-widest text-[#9e8973] font-mono -mt-0.5">
+              Read • Reason • Verify • Propose
+            </p>
           </div>
-        </Link>
+        </TransitionLink>
 
-        {/* Links */}
-        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-300">
-          <Link href="/projects" className="text-white hover:text-blue-300 font-semibold flex items-center gap-1.5 transition-colors">
-            <FolderGit2 className="w-4 h-4 text-blue-400" />
-            My Projects
-          </Link>
-          <a href="/#how-it-works" className="hover:text-white transition-colors">How It Works</a>
-          <a href="/#differentiation" className="hover:text-white transition-colors">Why RecLens</a>
-          <a href="/#features" className="hover:text-white transition-colors">Capabilities</a>
-          <Link href="/projects/demo-rfp-001" className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Demo
-          </Link>
+        {/* Minimal Restrained Center Navigation */}
+        <nav className="hidden md:flex items-center gap-8 text-xs font-medium tracking-wider uppercase text-[#b3a78f]">
+          <TransitionLink
+            href="/projects"
+            className="hover:text-[#faf8f5] transition-colors flex items-center gap-1.5"
+          >
+            <FolderGit2 className="w-3.5 h-3.5 text-[#cda76e]" />
+            <span>My Projects</span>
+          </TransitionLink>
+          <a href="/#understand" className="hover:text-[#faf8f5] transition-colors">
+            Intelligence
+          </a>
+          <a href="/#verify" className="hover:text-[#faf8f5] transition-colors">
+            Claim Firewall
+          </a>
+          <a href="/#deliver" className="hover:text-[#faf8f5] transition-colors">
+            Traceability
+          </a>
         </nav>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/projects"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition"
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
+          <TransitionLink
+            href="/projects/demo-rfp-001"
+            className="hidden sm:inline-flex items-center text-xs tracking-wider uppercase text-[#9e8973] hover:text-[#faf8f5] px-3 py-1.5 transition-colors"
           >
-            <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
-            My Projects
-          </Link>
+            Demo
+          </TransitionLink>
+
+          <TransitionLink
+            href="/projects"
+            className="inline-flex sm:hidden items-center gap-1.5 px-3 py-1.5 text-xs text-[#b3a78f] border border-[#2b2720] rounded-full"
+          >
+            <FolderGit2 className="w-3 h-3 text-[#cda76e]" />
+            Projects
+          </TransitionLink>
 
           <button
             onClick={onOpenUpload}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-md shadow-blue-600/30 transition hover:shadow-blue-500/40 active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] via-[#cda76e] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full shadow-md shadow-[#b08d4b]/15 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
-            Analyze RFP
-            <ArrowRight className="w-3.5 h-3.5" />
+            <span>Analyze RFP</span>
+            <ArrowRight className="w-3 h-3 text-[#080807]" />
           </button>
         </div>
       </div>
     </header>
   );
 }
-

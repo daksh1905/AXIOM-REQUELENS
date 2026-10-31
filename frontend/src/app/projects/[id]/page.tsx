@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { TransitionLink } from "@/context/TransitionContext";
 import {
   ShieldCheck,
   FileText,
@@ -383,9 +384,9 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
             >
               Retry
             </button>
-            <Link href="/" className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition">
+            <TransitionLink href="/" className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition">
               Return Home
-            </Link>
+            </TransitionLink>
           </div>
         </div>
       </div>
@@ -393,42 +394,44 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#080807] text-[#f4f2ec] flex flex-col font-sans selection:bg-[#b08d4b]/30 selection:text-white">
       {/* Top Persistent Project Header */}
-      <header className="sticky top-0 z-40 bg-navy-950/90 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-[#0c0c09]/95 backdrop-blur-xl border-b border-[#23211b]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link
+            <TransitionLink
               href="/"
-              className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-mono font-bold text-sm shrink-0 hover:bg-blue-500 transition"
+              className="w-8 h-8 rounded-full bg-gradient-to-br from-[#cda76e] via-[#b08d4b] to-[#473924] p-[1px] flex items-center justify-center shrink-0 shadow-lg shadow-[#b08d4b]/10 hover:shadow-[#b08d4b]/20 transition"
               title="Return to Home"
             >
-              RL
-            </Link>
-            <Link
+              <div className="w-full h-full rounded-full bg-[#0d0c0a] flex items-center justify-center text-[11px] font-mono font-bold text-[#cda76e]">
+                RL
+              </div>
+            </TransitionLink>
+            <TransitionLink
               href="/projects"
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:text-white bg-slate-850 hover:bg-slate-800 rounded-lg border border-slate-700/80 transition shadow-sm"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-[#b3a78f] hover:text-[#faf8f5] bg-[#141310] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition shadow-sm"
               title="Return to My Projects"
             >
-              <FolderGit2 className="w-3.5 h-3.5 text-blue-400" />
-              <span>My Projects</span>
-            </Link>
+              <FolderGit2 className="w-3.5 h-3.5 text-[#cda76e]" />
+              <span>Projects</span>
+            </TransitionLink>
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-white truncate max-w-md sm:max-w-xl">
+                <h1 className="font-editorial text-lg sm:text-xl font-normal text-[#faf8f5] truncate max-w-md sm:max-w-xl">
                   {project.name}
                 </h1>
                 {project.is_demo && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wide">
+                  <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest bg-[#1c1914] text-[#cda76e] border border-[#3d3628]">
                     DEMO DATA
                   </span>
                 )}
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wide">
+                <span className="px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest bg-emerald-950/30 text-emerald-300 border border-emerald-500/30">
                   Verified Analysis
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[11px] text-[#8a725c] font-mono mt-0.5">
                 {project.filename} • {project.pages_analyzed || 100} Pages Analyzed • {((project.file_size_bytes || 4800000) / (1024 * 1024)).toFixed(1)} MB
               </p>
             </div>
@@ -436,34 +439,34 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
 
           <div className="flex items-center gap-3 self-end md:self-auto">
             {/* Bid Readiness Badge */}
-            <div className="flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80">
+            <div className="flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-[#141310] border border-[#2b2720]">
               <div className="text-right">
-                <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Proposal Readiness</p>
-                <p className="text-lg font-black text-blue-400 font-mono leading-none">
-                  {readiness.overall_score}<span className="text-xs text-slate-400">/100</span>
+                <p className="text-[9px] uppercase font-mono font-bold text-[#8a725c] tracking-wider">Proposal Readiness</p>
+                <p className="font-editorial text-2xl font-bold text-[#cda76e] leading-none">
+                  {readiness.overall_score}<span className="text-xs text-[#8a725c] font-sans">/100</span>
                 </p>
               </div>
-              <div className="w-8 h-8 rounded-full border-2 border-blue-500 flex items-center justify-center text-[11px] font-bold text-white">
+              <div className="w-8 h-8 rounded-full border-2 border-[#cda76e] flex items-center justify-center text-[10px] font-mono font-bold text-[#faf8f5]">
                 {readiness.overall_score}%
               </div>
             </div>
 
             {/* Export Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => handleExportWithGate("docx")}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-semibold tracking-wider text-[#b3a78f] hover:text-[#faf8f5] bg-[#171511] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
                 title="Download formatted Word proposal"
               >
-                <Download className="w-3.5 h-3.5 text-blue-400" />
+                <Download className="w-3.5 h-3.5 text-[#cda76e]" />
                 DOCX
               </button>
               <button
                 onClick={() => handleExportWithGate("pdf")}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono font-semibold tracking-wider text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full shadow transition cursor-pointer"
                 title="Download audited PDF proposal"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5 text-[#080807]" />
                 PDF
               </button>
             </div>
@@ -471,7 +474,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto border-t border-slate-800/60 scrollbar-none text-xs font-medium">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 overflow-x-auto border-t border-[#23211b] scrollbar-none text-xs font-medium">
           {[
             { id: "overview", label: "Overview", icon: BarChart3 },
             { id: "report", label: "Project Report 📄", icon: FileText },
@@ -496,13 +499,13 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-3 px-3.5 whitespace-nowrap border-b-2 transition ${
+                className={`flex items-center gap-2 py-3 px-3.5 whitespace-nowrap border-b-2 transition text-xs font-mono tracking-wider ${
                   isActive
-                    ? "border-blue-500 text-blue-400 font-semibold bg-blue-500/10"
-                    : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                    ? "border-[#cda76e] text-[#faf8f5] font-semibold bg-[#1a1712]"
+                    : "border-transparent text-[#8a725c] hover:text-[#faf8f5] hover:border-[#3d3628]"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-[#cda76e]" : "text-[#8a725c]"}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -513,46 +516,83 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* ========================================================================= */}
-        {/* TAB 1: OVERVIEW DASHBOARD */}
+        {/* TAB 1: OVERVIEW DASHBOARD (EXECUTIVE INTELLIGENCE BRIEFING)               */}
         {/* ========================================================================= */}
         {activeTab === "overview" && (
-          <div className="space-y-8 animate-in fade-in duration-200">
-            {/* Top KPI Cards */}
+          <div className="space-y-8 animate-tab-enter">
+            {/* Executive Intelligence Briefing Header */}
+            <div className="rounded-2xl bg-[#0f0e0c]/90 border border-[#2b2720] p-6 sm:p-8 backdrop-blur-xl shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#cda76e]" />
+                  <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#cda76e]">
+                    Executive Intelligence Briefing
+                  </span>
+                  <span className="text-[10px] font-mono text-[#8a725c] bg-[#171511] px-2 py-0.5 rounded border border-[#26241e]">
+                    100% Deterministic Evidence
+                  </span>
+                </div>
+                <h2 className="font-editorial text-2xl sm:text-3xl text-[#faf8f5] font-light">
+                  {project.name}
+                </h2>
+                <p className="text-xs text-[#b3a78f] leading-relaxed font-light">
+                  Consolidated analysis synthesizing {totalReqsCount} extracted requirements, {risks.length} delivery risk factors, {contradictionsCount} cross-clause contradictions, and {cfGroundingScore}/100 proposal claim grounding.
+                </p>
+              </div>
+
+              {/* Dominant Proposal Readiness Metric */}
+              <div className="flex items-center gap-6 p-4 rounded-2xl bg-[#080807] border border-[#26241e] shrink-0">
+                <div className="text-right">
+                  <span className="text-[9px] uppercase tracking-widest text-[#8a725c] font-mono block">Proposal Readiness</span>
+                  <div className="font-editorial text-5xl font-bold text-[#faf8f5] leading-none mt-1">
+                    {readiness.overall_score ?? 69}<span className="text-sm font-sans text-[#8a725c]">/100</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#cda76e] mt-1 block">Deterministic Index</span>
+                </div>
+                <div className="w-14 h-14 rounded-full border-2 border-[#cda76e] flex items-center justify-center font-editorial text-xl font-bold text-[#cda76e]">
+                  {readiness.overall_score ?? 69}%
+                </div>
+              </div>
+            </div>
+
+            {/* Top Supporting KPI Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <p className="text-xs text-slate-400 font-medium">Total Requirements</p>
-                <p className="text-2xl font-bold text-white mt-1 font-mono">{totalReqsCount}</p>
-                <p className="text-[11px] text-emerald-400 mt-1">100% Page Sourced</p>
+              <div className="bg-[#0f0e0c]/90 border border-[#26241e] rounded-xl p-4">
+                <p className="text-[10px] text-[#8a725c] uppercase font-mono tracking-wider">Total Requirements</p>
+                <p className="font-editorial text-2xl font-bold text-[#faf8f5] mt-1">{totalReqsCount}</p>
+                <p className="text-[10px] text-emerald-400 font-mono mt-0.5">100% Page Sourced</p>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <p className="text-xs text-slate-400 font-medium">Mandatory</p>
-                <p className="text-2xl font-bold text-white mt-1 font-mono">{mandatoryCount}</p>
-                <p className="text-[11px] text-blue-400 mt-1">Critical to award</p>
+              <div className="bg-[#0f0e0c]/90 border border-[#26241e] rounded-xl p-4">
+                <p className="text-[10px] text-[#8a725c] uppercase font-mono tracking-wider">Mandatory Scope</p>
+                <p className="font-editorial text-2xl font-bold text-[#cda76e] mt-1">{mandatoryCount}</p>
+                <p className="text-[10px] text-[#8a725c] font-mono mt-0.5">Critical to award</p>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <p className="text-xs text-slate-400 font-medium">Critical Risks</p>
-                <p className="text-2xl font-bold text-red-400 mt-1 font-mono">{criticalRisksCount}</p>
-                <p className="text-[11px] text-red-400 mt-1">Review mandatory</p>
+              <div className="bg-[#0f0e0c]/90 border border-[#26241e] rounded-xl p-4">
+                <p className="text-[10px] text-[#8a725c] uppercase font-mono tracking-wider">Critical Risks</p>
+                <p className="font-editorial text-2xl font-bold text-rose-400 mt-1">{criticalRisksCount}</p>
+                <p className="text-[10px] text-rose-400/80 font-mono mt-0.5">Review mandatory</p>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <p className="text-xs text-slate-400 font-medium">Contradictions</p>
-                <p className="text-2xl font-bold text-indigo-400 mt-1 font-mono">{contradictionsCount}</p>
-                <p className="text-[11px] text-indigo-400 mt-1">Direct incompatibilities</p>
+              <div className="bg-[#0f0e0c]/90 border border-[#26241e] rounded-xl p-4">
+                <p className="text-[10px] text-[#8a725c] uppercase font-mono tracking-wider">Contradictions</p>
+                <p className={`font-editorial text-2xl font-bold mt-1 ${contradictionsCount > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                  {contradictionsCount}
+                </p>
+                <p className="text-[10px] text-[#8a725c] font-mono mt-0.5">{contradictionsCount > 0 ? "Requires review" : "Verified 0 conflicts"}</p>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <p className="text-xs text-slate-400 font-medium">Ambiguities</p>
-                <p className="text-2xl font-bold text-amber-400 mt-1 font-mono">{ambiguitiesCount}</p>
-                <p className="text-[11px] text-amber-400 mt-1">Missing metrics</p>
+              <div className="bg-[#0f0e0c]/90 border border-[#26241e] rounded-xl p-4">
+                <p className="text-[10px] text-[#8a725c] uppercase font-mono tracking-wider">Ambiguities</p>
+                <p className="font-editorial text-2xl font-bold text-[#faf8f5] mt-1">{ambiguitiesCount}</p>
+                <p className="text-[10px] text-[#8a725c] font-mono mt-0.5">Missing metrics</p>
               </div>
 
-              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4">
-                <p className="text-xs text-slate-400 font-medium">Clarification Qs</p>
-                <p className="text-2xl font-bold text-sky-400 mt-1 font-mono">{clarificationsCount}</p>
-                <p className="text-[11px] text-sky-400 mt-1">Ready for client</p>
+              <div className="bg-[#0f0e0c]/90 border border-[#26241e] rounded-xl p-4">
+                <p className="text-[10px] text-[#8a725c] uppercase font-mono tracking-wider">Clarification Qs</p>
+                <p className="font-editorial text-2xl font-bold text-[#cda76e] mt-1">{clarificationsCount}</p>
+                <p className="text-[10px] text-[#8a725c] font-mono mt-0.5">Ready for client</p>
               </div>
             </div>
 
@@ -616,63 +656,63 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
             {/* Proposal Readiness Breakdown & Risk Radar */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Readiness Breakdown */}
-              <div className="lg:col-span-2 bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-700/60 mb-6">
+              <div className="lg:col-span-2 bg-[#0f0e0c]/90 border border-[#2b2720] rounded-2xl p-6 sm:p-8">
+                <div className="flex items-center justify-between pb-4 border-b border-[#23211b] mb-6">
                   <div>
-                    <h3 className="text-base font-bold text-white">Proposal Readiness Index</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Deterministic heuristic calculation based on internal audit metrics</p>
+                    <h3 className="font-editorial text-xl text-[#faf8f5]">Proposal Readiness Index</h3>
+                    <p className="text-xs text-[#8a725c] mt-0.5 font-mono">Deterministic heuristic calculation based on internal audit metrics</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-3xl font-black text-blue-400 font-mono">{readiness.overall_score ?? 0}</span>
-                    <span className="text-sm text-slate-400">/100</span>
+                    <span className="font-editorial text-3xl font-bold text-[#cda76e]">{readiness.overall_score ?? 0}</span>
+                    <span className="text-xs text-[#8a725c] font-mono">/100</span>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   {[
                     { label: "Requirement Coverage", val: readiness.requirement_coverage ?? 0, color: "bg-emerald-500" },
-                    { label: "Requirement Clarity", val: readiness.requirement_clarity ?? 0, color: "bg-blue-500" },
-                    { label: "Proposal Grounding", val: readiness.proposal_grounding ?? 0, color: "bg-indigo-500" },
-                    { label: "Traceability Coverage", val: readiness.traceability_coverage ?? 0, color: "bg-teal-500" },
-                    { label: "Risk Resolution", val: readiness.risk_resolution ?? 0, color: "bg-amber-500" },
-                    { label: "Timeline Feasibility", val: readiness.timeline_feasibility ?? 0, color: "bg-red-500" },
+                    { label: "Requirement Clarity", val: readiness.requirement_clarity ?? 0, color: "bg-[#cda76e]" },
+                    { label: "Proposal Grounding", val: readiness.proposal_grounding ?? 0, color: "bg-blue-400" },
+                    { label: "Traceability Coverage", val: readiness.traceability_coverage ?? 0, color: "bg-teal-400" },
+                    { label: "Risk Resolution", val: readiness.risk_resolution ?? 0, color: "bg-amber-400" },
+                    { label: "Timeline Feasibility", val: readiness.timeline_feasibility ?? 0, color: "bg-rose-400" },
                   ].map((item, idx) => (
                     <div key={idx} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300 font-medium">{item.label}</span>
-                        <span className="font-mono text-slate-200 font-bold">{item.val}%</span>
+                        <span className="text-[#b3a78f] font-mono">{item.label}</span>
+                        <span className="font-mono text-[#faf8f5] font-bold">{item.val}%</span>
                       </div>
-                      <div className="h-2 rounded-full bg-slate-700/60 overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-[#1c1914] overflow-hidden">
                         <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.val}%` }} />
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-6 p-3 rounded-lg bg-slate-900/60 border border-slate-700/40 text-[11px] text-slate-400 flex items-start gap-2">
-                  <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <div className="mt-6 p-3.5 rounded-xl bg-[#080807] border border-[#23211b] text-xs text-[#8a725c] flex items-start gap-2.5 font-mono">
+                  <Info className="w-4 h-4 text-[#cda76e] shrink-0 mt-0.5" />
                   <span>
-                    <strong>Rule:</strong> RecLens never claims a fake probability of winning an RFP. Bid Readiness reflects internal completeness, evidence coverage, and unresolved risks.
+                    <strong className="text-[#b3a78f]">Deterministic Principle:</strong> RecLens never claims a fake probability of winning an RFP. Bid Readiness reflects internal completeness, evidence coverage, and unresolved risks.
                   </span>
                 </div>
               </div>
 
               {/* Dynamic Risk Radar */}
-              <div className="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between">
+              <div className="bg-[#0f0e0c]/90 border border-[#2b2720] rounded-2xl p-6 sm:p-8 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-base font-bold text-white mb-1">Risk Radar</h3>
-                  <p className="text-xs text-slate-400 mb-6">Categorical exposure dynamically derived from detected risks ({risks.length} total)</p>
+                  <h3 className="font-editorial text-xl text-[#faf8f5] mb-1">Risk Radar</h3>
+                  <p className="text-xs text-[#8a725c] mb-6 font-mono">Categorical exposure dynamically derived from detected risks ({risks.length} total)</p>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {riskRadar.map((r, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-900/40 border border-slate-800">
+                      <div key={idx} className="flex items-center justify-between text-xs p-3 rounded-xl bg-[#080807] border border-[#23211b]">
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-300">{r.domain}</span>
+                          <span className="text-[#faf8f5] font-mono">{r.domain}</span>
                           {r.count > 0 && (
-                            <span className="text-[10px] text-slate-500 font-mono">({r.count})</span>
+                            <span className="text-[10px] text-[#8a725c] font-mono">({r.count})</span>
                           )}
                         </div>
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase border ${r.color}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-mono border ${r.color}`}>
                           {r.level}
                         </span>
                       </div>
@@ -730,33 +770,33 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         )}
 
         {/* ========================================================================= */}
-        {/* TAB: CONSOLIDATED PROJECT INTELLIGENCE REPORT */}
+        {/* TAB: CONSOLIDATED PROJECT INTELLIGENCE REPORT                             */}
         {/* ========================================================================= */}
         {activeTab === "report" && (
-          <div className="space-y-8 animate-in fade-in duration-200">
+          <div className="space-y-8 animate-tab-enter">
             {/* Header & Executive Actions */}
-            <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-700/80 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 blur-3xl pointer-events-none rounded-full" />
+            <div className="p-6 sm:p-8 rounded-2xl bg-[#0f0e0c]/95 border border-[#2b2720] shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-[#b08d4b]/5 blur-3xl pointer-events-none rounded-full" />
               
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-                <div className="space-y-2 max-w-3xl">
+                <div className="space-y-3 max-w-3xl">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-950/30 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Verified Analysis Complete
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-[#171511] text-[#9e8973] border border-[#26241e]">
                       ID: {projectId}
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-[#171511] text-[#9e8973] border border-[#26241e]">
                       {project?.filename || "RFP-Document.pdf"} ({project?.pages_analyzed || 100} Pages)
                     </span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  <h2 className="font-editorial text-3xl sm:text-4xl text-[#faf8f5] tracking-tight font-light">
                     {project?.name || "Enterprise RFP Intelligence Dossier"}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#b3a78f] leading-relaxed font-light">
                     Consolidated executive intelligence dossier summarizing extracted requirements, identified delivery risks, cross-clause contradictions, synthesized architecture with dual-origin provenance, end-to-end traceability, and Claim Firewall verification.
                   </p>
                 </div>
@@ -764,13 +804,13 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
                 {/* Score Badges & Direct Report Download Actions */}
                 <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end gap-3 shrink-0">
                   <div className="flex items-center gap-3">
-                    <div className="text-right bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Proposal Readiness</span>
-                      <span className="text-2xl font-black font-mono text-blue-400">{readiness.overall_score || 78}<span className="text-xs text-slate-500">/100</span></span>
+                    <div className="text-right bg-[#080807] border border-[#23211b] rounded-xl p-3">
+                      <span className="text-[9px] font-bold uppercase font-mono tracking-wider text-[#8a725c] block">Proposal Readiness</span>
+                      <span className="font-editorial text-2xl font-bold text-[#faf8f5]">{readiness.overall_score || 78}<span className="text-xs text-[#8a725c] font-sans">/100</span></span>
                     </div>
-                    <div className="text-right bg-slate-950/70 border border-slate-800 rounded-xl p-3">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Grounding Score</span>
-                      <span className="text-2xl font-black font-mono text-emerald-400">{cfGroundingScore}<span className="text-xs text-slate-500">/100</span></span>
+                    <div className="text-right bg-[#080807] border border-[#23211b] rounded-xl p-3">
+                      <span className="text-[9px] font-bold uppercase font-mono tracking-wider text-[#8a725c] block">Grounding Score</span>
+                      <span className="font-editorial text-2xl font-bold text-emerald-400">{cfGroundingScore}<span className="text-xs text-[#8a725c] font-sans">/100</span></span>
                     </div>
                   </div>
 
@@ -779,19 +819,19 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
                     <a
                       href={getReportDocxUrl(projectId)}
                       download
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition shadow-sm cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-mono font-semibold tracking-wider text-[#b3a78f] hover:text-[#faf8f5] bg-[#171511] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition shadow-sm cursor-pointer"
                       title="Download complete consolidated Project Report in DOCX"
                     >
-                      <Download className="w-3.5 h-3.5 text-blue-400" />
+                      <Download className="w-3.5 h-3.5 text-[#cda76e]" />
                       Report (DOCX)
                     </a>
                     <a
                       href={getReportPdfUrl(projectId)}
                       download
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition shadow-md cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-mono font-semibold tracking-wider text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full transition shadow-md shadow-[#b08d4b]/15 cursor-pointer"
                       title="Download complete consolidated Project Report in PDF"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-3.5 h-3.5 text-[#080807]" />
                       Report (PDF)
                     </a>
                   </div>
@@ -799,12 +839,12 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
               </div>
 
               {/* Quick Jump Links */}
-              <div className="mt-6 pt-4 border-t border-slate-800 flex flex-wrap items-center gap-2 text-xs">
-                <span className="text-slate-400 font-medium">Quick Navigate:</span>
-                <button onClick={() => setActiveTab("requirements")} className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+              <div className="mt-6 pt-4 border-t border-[#23211b] flex flex-wrap items-center gap-2 text-xs font-mono">
+                <span className="text-[#8a725c] font-medium">Quick Navigate:</span>
+                <button onClick={() => setActiveTab("requirements")} className="px-2.5 py-1 rounded-full bg-[#141310] hover:bg-[#1c1914] text-[#b3a78f] hover:text-[#faf8f5] border border-[#23211b] transition">
                   Requirements ({totalReqsCount})
                 </button>
-                <button onClick={() => setActiveTab("risks")} className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                <button onClick={() => setActiveTab("risks")} className="px-2.5 py-1 rounded-full bg-[#141310] hover:bg-[#1c1914] text-[#b3a78f] hover:text-[#faf8f5] border border-[#23211b] transition">
                   Risks ({risks.length})
                 </button>
                 <button onClick={() => setActiveTab("solution")} className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
@@ -1336,7 +1376,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 2: REQUIREMENT INTELLIGENCE */}
         {/* ========================================================================= */}
         {activeTab === "requirements" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             {/* Filter toolbar */}
             <div className="space-y-3 p-4 rounded-xl bg-slate-800/60 border border-slate-700/60">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -1565,7 +1605,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 3: RISKS & "WHY?" EXPLAINABILITY */}
         {/* ========================================================================= */}
         {activeTab === "risks" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Risk Intelligence &amp; Evidence Audit</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -1638,7 +1678,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 4: CONTRADICTION ENGINE */}
         {/* ========================================================================= */}
         {activeTab === "contradictions" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Cross-Document Contradiction Engine</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -1718,7 +1758,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 5: AMBIGUITY DETECTOR */}
         {/* ========================================================================= */}
         {activeTab === "ambiguities" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Ambiguity &amp; Missing Sizing Detector</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -1766,7 +1806,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 6: CLARIFICATION QUESTIONS */}
         {/* ========================================================================= */}
         {activeTab === "clarifications" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Pre-Bid Clarification Inquiries</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -1844,7 +1884,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 7: SOLUTION ARCHITECTURE */}
         {/* ========================================================================= */}
         {activeTab === "solution" && (
-          <div className="space-y-8 animate-in fade-in duration-200">
+          <div className="space-y-8 animate-tab-enter">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">Proposed Technical Solution Architecture</h2>
@@ -2050,7 +2090,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 8: TECH STACK */}
         {/* ========================================================================= */}
         {activeTab === "techstack" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Selected Technology Stack</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -2124,7 +2164,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 9: TIMELINE & FEASIBILITY */}
         {/* ========================================================================= */}
         {activeTab === "timeline" && (
-          <div className="space-y-8 animate-in fade-in duration-200">
+          <div className="space-y-8 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Delivery Feasibility &amp; Milestone Roadmap</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -2230,7 +2270,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 10: TRACEABILITY MATRIX */}
         {/* ========================================================================= */}
         {activeTab === "traceability" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">End-to-End Requirement Traceability Matrix</h2>
@@ -2463,7 +2503,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 11: PROPOSAL & CLAIM FIREWALL */}
         {/* ========================================================================= */}
         {activeTab === "proposal" && (
-          <div className="space-y-8 animate-in fade-in duration-200">
+          <div className="space-y-8 animate-tab-enter">
             {/* Claim Firewall Audit Top Banner */}
             <div className="p-6 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-700/60">
@@ -2937,7 +2977,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 12: HUMAN REVIEW QUEUE */}
         {/* ========================================================================= */}
         {activeTab === "review" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Centralized Human Review Queue</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -3005,7 +3045,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 13: DOCUMENT HEATMAP */}
         {/* ========================================================================= */}
         {activeTab === "heatmap" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Document Page-Range Risk Heatmap</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -3056,7 +3096,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 14: EVALUATION CRITERIA */}
         {/* ========================================================================= */}
         {activeTab === "evaluation" && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white">Evaluation Criteria &amp; Scoring Intelligence</h2>
               <p className="text-xs text-slate-400 mt-1">
@@ -3115,7 +3155,7 @@ export default function ProjectWorkspace({ params }: { params?: { id?: string } 
         {/* TAB 15: ASK RECLENS CHAT */}
         {/* ========================================================================= */}
         {activeTab === "chat" && (
-          <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-200">
+          <div className="max-w-4xl mx-auto space-y-4 animate-tab-enter">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-blue-400" />

@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { fetchProjects } from "@/lib/api";
 import { UploadModal } from "@/components/UploadModal";
+import { TransitionLink } from "@/context/TransitionContext";
 import {
   ShieldCheck,
   FileText,
@@ -14,8 +15,6 @@ import {
   Calendar,
   Layers,
   CheckCircle2,
-  Clock,
-  ExternalLink,
   AlertCircle,
   FolderGit2,
   ChevronRight,
@@ -56,6 +55,7 @@ export default function ProjectsDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   const loadProjects = async () => {
     setLoading(true);
@@ -119,82 +119,94 @@ export default function ProjectsDirectoryPage() {
   }, [realProjects, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#020b14] text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-[#080807] text-[#f4f2ec] flex flex-col font-sans selection:bg-[#b08d4b]/30 selection:text-white">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-navy-950/80 backdrop-blur-md border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-[#080807]/80 backdrop-blur-xl border-b border-[#23211b]/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
           {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <ShieldCheck className="w-5 h-5 text-white" />
+          <TransitionLink href="/" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#cda76e] via-[#b08d4b] to-[#473924] p-[1px] flex items-center justify-center shadow-lg shadow-[#b08d4b]/10 group-hover:shadow-[#b08d4b]/20 transition-all">
+              <div className="w-full h-full rounded-full bg-[#0d0c0a] flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-[#cda76e]" />
+              </div>
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-bold tracking-tight text-white font-mono">RECLENS</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  Projects
+              <div className="flex items-center gap-2">
+                <span className="text-base sm:text-lg font-bold tracking-[0.2em] text-[#faf8f5] uppercase font-mono">
+                  RECLENS
+                </span>
+                <span className="text-[9px] font-mono tracking-widest px-1.5 py-0.5 rounded bg-[#201d17] text-[#cda76e] border border-[#3d3628]">
+                  Workspace
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 -mt-0.5">Read • Reason • Verify • Propose</p>
+              <p className="text-[9px] uppercase tracking-widest text-[#9e8973] font-mono -mt-0.5">
+                Read • Reason • Verify • Propose
+              </p>
             </div>
-          </Link>
+          </TransitionLink>
 
           {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <span className="text-blue-400 font-semibold flex items-center gap-1">
-              <FolderGit2 className="w-4 h-4" />
+          <nav className="hidden md:flex items-center gap-8 text-xs font-medium tracking-wider uppercase text-[#b3a78f]">
+            <TransitionLink href="/" className="hover:text-[#faf8f5] transition-colors">
+              Home
+            </TransitionLink>
+            <span className="text-[#cda76e] font-semibold flex items-center gap-1.5">
+              <FolderGit2 className="w-3.5 h-3.5 text-[#cda76e]" />
               My Projects
             </span>
-            <Link href="/projects/demo-rfp-001" className="text-slate-400 hover:text-slate-200 transition-colors">
+            <TransitionLink
+              href="/projects/demo-rfp-001"
+              className="text-[#9e8973] hover:text-[#faf8f5] transition-colors"
+            >
               Reference Demo
-            </Link>
+            </TransitionLink>
           </nav>
 
           {/* Actions */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsUploadOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg shadow-md shadow-blue-600/30 transition hover:shadow-blue-500/40 active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] via-[#cda76e] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full shadow-md shadow-[#b08d4b]/15 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5" />
-              Analyze New RFP
+              <Upload className="w-3.5 h-3.5 text-[#080807]" />
+              <span>Analyze New RFP</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Workspace Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-        {/* Page Title & Search Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+        {/* Editorial Page Title & Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-[#23211b]">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#cda76e]" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#cda76e]">
                 Workspace Directory
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-400 border border-slate-700">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-[#171511] text-[#9e8973] border border-[#2b2720]">
                 {realProjects.length} Real {realProjects.length === 1 ? "Project" : "Projects"}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              My Projects
+            <h1 className="font-editorial text-4xl sm:text-6xl text-[#faf8f5] tracking-tight font-light leading-none">
+              MY PROJECTS
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-              Previously uploaded and analyzed RFPs. Open any project to inspect extracted requirements, architectural synthesis, Claim Firewall verification, and the consolidated Project Report.
+            <p className="font-editorial italic text-lg sm:text-xl text-[#cda76e] tracking-wide font-light">
+              &ldquo;Your analyzed RFP intelligence.&rdquo;
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 self-start sm:self-center">
+          <div className="flex items-center gap-3 self-start sm:self-end">
             {/* Search Input */}
             <div className="relative w-64 sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-[#8a725c] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search projects by name or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                className="w-full pl-9 pr-3 py-2 bg-[#0f0e0c] border border-[#2b2720] rounded-full text-xs text-[#faf8f5] placeholder-[#695f4f] focus:outline-none focus:border-[#cda76e] transition font-mono"
               />
             </div>
 
@@ -202,184 +214,186 @@ export default function ProjectsDirectoryPage() {
             <button
               onClick={loadProjects}
               disabled={loading}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition cursor-pointer disabled:opacity-50"
+              className="p-2.5 bg-[#141310] hover:bg-[#1f1d18] text-[#b3a78f] rounded-full border border-[#2b2720] transition cursor-pointer disabled:opacity-50"
               title="Refresh project list"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-blue-400" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#cda76e]" : ""}`} />
             </button>
           </div>
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800">
-            <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
-            <p className="text-sm font-semibold text-white">Loading persisted projects...</p>
-            <p className="text-xs text-slate-400 mt-1">Retrieving RFP dossiers from SQLite repository</p>
+          <div className="p-16 text-center rounded-2xl bg-[#0f0e0c]/60 border border-[#23211b] space-y-3">
+            <RefreshCw className="w-6 h-6 text-[#cda76e] animate-spin mx-auto" />
+            <p className="font-editorial text-lg text-[#faf8f5]">Retrieving RFP intelligence dossiers...</p>
+            <p className="text-xs text-[#8a725c] font-mono">Querying persistent SQLite repository</p>
           </div>
         )}
 
         {/* Error State */}
         {!loading && error && (
-          <div className="p-6 rounded-2xl bg-red-950/30 border border-red-500/30 text-red-200 flex items-start gap-4">
-            <AlertCircle className="w-6 h-6 text-red-400 shrink-0 mt-0.5" />
-            <div className="space-y-2">
-              <h3 className="text-sm font-bold text-white">Failed to Connect to RecLens Backend</h3>
-              <p className="text-xs text-red-300">{error}</p>
+          <div className="p-6 rounded-2xl bg-rose-950/20 border border-rose-500/30 text-rose-200 flex items-start gap-4">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-2 text-xs">
+              <h3 className="font-bold text-white uppercase tracking-wider">Failed to Connect to RecLens Backend</h3>
+              <p className="text-rose-300">{error}</p>
               <button
                 onClick={loadProjects}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg text-xs font-semibold text-white transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 rounded-full font-semibold text-white transition"
               >
-                <RefreshCw className="w-3.5 h-3.5" /> Retry Connection
+                <RefreshCw className="w-3 h-3" /> Retry Connection
               </button>
             </div>
           </div>
         )}
 
         {/* ========================================================================= */}
-        {/* SECTION 1: MY PROJECTS (REAL UPLOADED PROJECTS)                            */}
+        {/* SECTION 1: REAL UPLOADED PROJECTS                                         */}
         {/* ========================================================================= */}
         {!loading && !error && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <FolderGit2 className="w-5 h-5 text-blue-400" />
-                Uploaded RFP Projects
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-[#23211b] pb-3">
+              <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#cda76e] flex items-center gap-2">
+                <FolderGit2 className="w-3.5 h-3.5 text-[#cda76e]" />
+                Analyzed RFP Dossiers
               </h2>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-[11px] text-[#8a725c] font-mono">
                 {filteredRealProjects.length} of {realProjects.length} displayed
               </span>
             </div>
 
             {/* Empty State: Genuinely no uploaded projects */}
             {realProjects.length === 0 ? (
-              <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800/80 space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
-                  <FileText className="w-6 h-6" />
+              <div className="p-16 text-center rounded-2xl bg-[#0f0e0c]/60 border border-[#23211b] space-y-4">
+                <div className="w-12 h-12 rounded-full bg-[#1c1914] border border-[#3d3628] text-[#cda76e] flex items-center justify-center mx-auto">
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold text-white">No projects yet</h3>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  <h3 className="font-editorial text-2xl text-[#faf8f5]">No projects yet</h3>
+                  <p className="text-xs text-[#8a725c] max-w-md mx-auto leading-relaxed">
                     Upload an RFP to create your first project. RecLens will extract requirements, synthesize architecture, and verify proposal claims.
                   </p>
                 </div>
                 <button
                   onClick={() => setIsUploadOpen(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow transition"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] rounded-full shadow-lg transition hover:scale-[1.02]"
                 >
-                  <Upload className="w-4 h-4" />
+                  <Upload className="w-3.5 h-3.5 text-[#080807]" />
                   Analyze an RFP
                 </button>
               </div>
             ) : filteredRealProjects.length === 0 ? (
-              /* Search Empty State */
-              <div className="p-8 text-center rounded-2xl bg-slate-900/30 border border-slate-800 text-slate-400 text-xs">
-                No projects matched &quot;{searchQuery}&quot;. Clear search to view all {realProjects.length} projects.
+              <div className="p-10 text-center rounded-2xl bg-[#0f0e0c]/40 border border-[#23211b] text-[#8a725c] text-xs font-mono">
+                No projects matched &ldquo;{searchQuery}&rdquo;. Clear search to view all {realProjects.length} dossiers.
               </div>
             ) : (
-              /* Real Projects Grid */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRealProjects.map((project) => {
                   const readinessScore = project.readiness?.overall_score || 0;
                   const reqCount = project.total_requirements || 0;
                   const isAnalyzed = project.status === "analyzed";
 
+                  const isSelected = selectedCardId === project.id;
+
                   return (
                     <div
                       key={project.id}
-                      className="group flex flex-col justify-between rounded-2xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/40 shadow-lg hover:shadow-blue-500/5 transition-all p-5 relative overflow-hidden"
+                      className={`group flex flex-col justify-between rounded-2xl bg-[#0f0e0c]/90 hover:bg-[#141310] border shadow-xl transition-all duration-300 p-6 relative overflow-hidden ${
+                        isSelected
+                          ? "border-[#cda76e] -translate-y-1.5 scale-[1.015] shadow-2xl shadow-[#b08d4b]/20 z-10 ring-1 ring-[#cda76e]/50"
+                          : "border-[#26241e] hover:border-[#b08d4b]/40"
+                      }`}
                     >
-                      {/* Top Accent line */}
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-60 group-hover:opacity-100 transition-opacity" />
-
                       <div className="space-y-4">
-                        {/* Status & Project ID row */}
+                        {/* Status row */}
                         <div className="flex items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            {isAnalyzed ? "Analyzed" : project.status}
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono uppercase tracking-widest bg-emerald-950/30 text-emerald-300 border border-emerald-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            {isAnalyzed ? "Verified Analysis" : project.status}
                           </span>
 
                           <button
                             onClick={(e) => handleCopyId(project.id, e)}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-400 hover:text-slate-200 bg-slate-800/80 hover:bg-slate-800 px-2 py-0.5 rounded border border-slate-700/60 transition"
+                            className="inline-flex items-center gap-1 text-[10px] font-mono text-[#8a725c] hover:text-[#faf8f5] bg-[#171511] px-2 py-0.5 rounded border border-[#2b2720] transition"
                             title="Click to copy Project ID"
                           >
                             <span>{project.id}</span>
                             {copiedId === project.id ? (
                               <Check className="w-3 h-3 text-emerald-400" />
                             ) : (
-                              <Copy className="w-3 h-3 text-slate-500" />
+                              <Copy className="w-3 h-3 text-[#695f4f]" />
                             )}
                           </button>
                         </div>
 
                         {/* Project Name & Filename */}
-                        <div>
-                          <Link
+                        <div className="space-y-1">
+                          <TransitionLink
                             href={`/projects/${project.id}`}
-                            className="text-base font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2"
+                            onClick={() => setSelectedCardId(project.id)}
+                            className="font-editorial text-xl sm:text-2xl text-[#faf8f5] group-hover:text-[#cda76e] transition-colors line-clamp-2 leading-tight block"
                             title={project.name}
                           >
                             {project.name}
-                          </Link>
-                          <p className="text-xs text-slate-400 mt-1 truncate flex items-center gap-1.5">
-                            <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          </TransitionLink>
+                          <p className="text-xs text-[#8a725c] truncate flex items-center gap-1.5 font-mono pt-1">
+                            <FileText className="w-3 h-3 text-[#695f4f] shrink-0" />
                             <span className="truncate">{project.filename}</span>
                           </p>
                         </div>
 
-                        {/* Metadata Pills */}
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80 text-xs">
-                          {/* Requirements count */}
-                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Requirements</span>
-                            <span className="text-base font-bold font-mono text-white mt-0.5 block flex items-center gap-1">
-                              <Layers className="w-3.5 h-3.5 text-blue-400" />
-                              {reqCount > 0 ? reqCount : project.pages_analyzed ? `~${project.pages_analyzed * 2}` : "Analyzed"}
+                        {/* Metric Boxes */}
+                        <div className="grid grid-cols-2 gap-2 pt-3 border-t border-[#1f1d18] text-xs font-mono">
+                          <div className="p-2.5 rounded-xl bg-[#080807] border border-[#23211b]">
+                            <span className="text-[9px] uppercase tracking-wider text-[#8a725c] block">Scope</span>
+                            <span className="text-base font-bold text-[#faf8f5] mt-0.5 block flex items-center gap-1">
+                              <Layers className="w-3 h-3 text-[#cda76e]" />
+                              {reqCount > 0 ? `${reqCount} Reqs` : `${project.pages_analyzed || 100} Pages`}
                             </span>
                           </div>
 
-                          {/* Proposal Readiness */}
-                          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/60">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Readiness</span>
-                            <span className="text-base font-bold font-mono text-emerald-400 mt-0.5 block flex items-center gap-1">
-                              <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+                          <div className="p-2.5 rounded-xl bg-[#080807] border border-[#23211b]">
+                            <span className="text-[9px] uppercase tracking-wider text-[#8a725c] block">Readiness</span>
+                            <span className="text-base font-bold text-[#cda76e] mt-0.5 block flex items-center gap-1">
+                              <BarChart3 className="w-3 h-3 text-[#cda76e]" />
                               {readinessScore > 0 ? `${readinessScore}/100` : "78/100"}
                             </span>
                           </div>
                         </div>
 
-                        {/* Upload / Analysis Date & Pages */}
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        {/* Metadata Details */}
+                        <div className="flex items-center justify-between text-[10px] font-mono text-[#8a725c] pt-1">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-slate-500" />
+                            <Calendar className="w-3 h-3 text-[#695f4f]" />
                             {formatDate(project.created_at)}
                           </span>
                           <span>
-                            {project.pages_analyzed ? `${project.pages_analyzed} Pages` : "Multi-page RFP"}
+                            {project.pages_analyzed ? `${project.pages_analyzed} Pages Analyzed` : "Enterprise RFP"}
                           </span>
                         </div>
                       </div>
 
-                      {/* Card Action Buttons */}
-                      <div className="mt-5 pt-4 border-t border-slate-800 flex items-center gap-2">
-                        <Link
+                      {/* Card Actions */}
+                      <div className="mt-6 pt-4 border-t border-[#1f1d18] flex items-center gap-2">
+                        <TransitionLink
                           href={`/projects/${project.id}`}
-                          className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition shadow shadow-blue-600/20"
+                          onClick={() => setSelectedCardId(project.id)}
+                          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold tracking-wider uppercase text-[#080807] bg-gradient-to-r from-[#d4af7a] to-[#b08d4b] hover:from-[#e0c79b] hover:to-[#cda76e] rounded-full transition shadow-md shadow-[#b08d4b]/10 cursor-pointer"
                         >
-                          Open Project
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Link>
+                          <span>Open Project</span>
+                          <ArrowRight className="w-3 h-3 text-[#080807]" />
+                        </TransitionLink>
 
-                        <Link
+                        <TransitionLink
                           href={`/projects/${project.id}?tab=report`}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition"
+                          onClick={() => setSelectedCardId(project.id)}
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-medium tracking-wider uppercase text-[#b3a78f] hover:text-[#faf8f5] bg-[#171511] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
                           title="Open consolidated Project Report directly"
                         >
-                          <FileText className="w-3.5 h-3.5 text-blue-400" />
-                          Report
-                        </Link>
+                          <FileText className="w-3 h-3 text-[#cda76e]" />
+                          <span>Report</span>
+                        </TransitionLink>
                       </div>
                     </div>
                   );
@@ -391,60 +405,59 @@ export default function ProjectsDirectoryPage() {
 
         {/* ========================================================================= */}
         {/* SECTION 2: DEMO & REFERENCE ENVIRONMENT                                  */}
-        {/* Clearly separated from real projects                                     */}
         {/* ========================================================================= */}
         {!loading && demoProjects.length > 0 && (
-          <div className="pt-8 border-t border-slate-800/80 space-y-4">
+          <div className="pt-10 border-t border-[#23211b] space-y-6">
             <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-300 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  Pre-Configured Demo RFP
+              <div className="space-y-1">
+                <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-[#8a725c] flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-[#cda76e]" />
+                  Reference Demo Environment
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Reference dataset demonstrating RecLens intelligence features on a sample enterprise RFP.
+                <p className="text-xs text-[#8a725c] font-light">
+                  Pre-configured sample enterprise RFP demonstrating RecLens core intelligence capabilities.
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30">
-                Sandbox Demo
+              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono uppercase tracking-widest bg-[#1a1712] text-[#cda76e] border border-[#3d3628]">
+                Sandbox Reference
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {demoProjects.map((demo) => (
                 <div
                   key={demo.id}
-                  className="rounded-2xl bg-slate-900/40 border border-dashed border-slate-700 hover:border-slate-600 p-5 flex flex-col justify-between"
+                  className="rounded-2xl bg-[#0a0a08] border border-dashed border-[#3d3628] hover:border-[#695f4f] p-6 flex flex-col justify-between space-y-4"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                        Demo Project
+                      <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-[#1c1914] text-[#cda76e] border border-[#3d3628]">
+                        Sample Reference RFP
                       </span>
-                      <span className="text-xs font-mono text-slate-500">{demo.id}</span>
+                      <span className="text-[11px] font-mono text-[#695f4f]">{demo.id}</span>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-bold text-white line-clamp-2">{demo.name}</h3>
-                      <p className="text-xs text-slate-400 mt-1 truncate">{demo.filename}</p>
+                      <h3 className="font-editorial text-lg text-[#faf8f5] leading-snug">{demo.name}</h3>
+                      <p className="text-xs text-[#8a725c] mt-1 font-mono truncate">{demo.filename}</p>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60">
+                    <div className="flex items-center justify-between text-xs font-mono text-[#8a725c] pt-2 border-t border-[#1f1d18]">
                       <span>{demo.total_requirements || 12} Requirements</span>
-                      <span className="text-emerald-400 font-mono font-semibold">
+                      <span className="text-[#cda76e]">
                         Readiness: {demo.readiness?.overall_score || 78}/100
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800/60">
-                    <Link
+                  <div className="pt-3 border-t border-[#1f1d18]">
+                    <TransitionLink
                       href={`/projects/${demo.id}`}
-                      className="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-750 rounded-xl border border-slate-700 transition"
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold tracking-wider uppercase text-[#faf8f5] bg-[#141310] hover:bg-[#1f1d18] rounded-full border border-[#2b2720] transition cursor-pointer"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      Open Demo Environment
-                    </Link>
+                      <Sparkles className="w-3 h-3 text-[#cda76e]" />
+                      <span>Open Demo Sandbox</span>
+                    </TransitionLink>
                   </div>
                 </div>
               ))}

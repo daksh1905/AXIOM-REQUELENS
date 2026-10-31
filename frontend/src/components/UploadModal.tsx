@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, ArrowRight } from "lucide-react";
 import { uploadRFP, fetchProgress } from "@/lib/api";
+import { usePageTransition } from "@/context/TransitionContext";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface UploadModalProps {
 
 export function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const router = useRouter();
+  const { navigateTo } = usePageTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -75,8 +77,8 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
           clearInterval(interval);
           setTimeout(() => {
             onClose();
-            router.push(`/projects/${pId}`);
-          }, 800);
+            navigateTo(`/projects/${pId}`);
+          }, 600);
         }
       } catch (e) {
         console.error("Progress poll failed", e);
